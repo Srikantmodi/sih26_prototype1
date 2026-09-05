@@ -1,0 +1,226 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "outline-variant": "#c6c6cd",
+          "error": "#ba1a1a",
+          "tertiary": "#000000",
+          "outline": "#76777d",
+          "surface-dim": "#dcdad2",
+          "surface-container-lowest": "#ffffff",
+          "on-tertiary-container": "#c76c00",
+          "on-primary-fixed-variant": "#3f4759",
+          "inverse-primary": "#bfc6dc",
+          "on-secondary-fixed-variant": "#005049",
+          "surface-variant": "#e4e3db",
+          "secondary": "#006a61",
+          "on-surface": "#1b1c17",
+          "on-primary-fixed": "#141b2c",
+          "secondary-fixed-dim": "#6bd8cb",
+          "on-background": "#1b1c17",
+          "tertiary-fixed": "#ffdcc3",
+          "primary-container": "#141b2c",
+          "on-error": "#ffffff",
+          "background": "#fbf9f1",
+          "surface-container": "#f0eee6",
+          "surface-tint": "#565e71",
+          "surface-container-low": "#f6f4ec",
+          "surface-bright": "#fbf9f1",
+          "on-secondary-container": "#006f66",
+          "on-tertiary-fixed": "#2f1500",
+          "on-tertiary": "#ffffff",
+          "on-primary": "#ffffff",
+          "inverse-on-surface": "#f3f1e9",
+          "surface": "#fbf9f1",
+          "on-surface-variant": "#45474c",
+          "primary-fixed-dim": "#bfc6dc",
+          "primary": "#000000",
+          "on-secondary": "#ffffff",
+          "on-error-container": "#93000a",
+          "secondary-fixed": "#89f5e7",
+          "primary-fixed": "#dbe2f9",
+          "on-primary-container": "#7c8498",
+          "error-container": "#ffdad6",
+          "secondary-container": "#86f2e4",
+          "tertiary-container": "#2f1500",
+          "on-secondary-fixed": "#00201d",
+          "surface-container-high": "#eae8e0",
+          "inverse-surface": "#30312c",
+          "on-tertiary-fixed-variant": "#6e3900",
+          "surface-container-highest": "#e4e3db",
+          "tertiary-fixed-dim": "#ffb77d"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "gutter-sm": "8px",
+          "unit": "4px",
+          "panel-padding": "16px",
+          "margin-screen": "24px",
+          "gutter-md": "16px",
+          "gutter-lg": "24px",
+          "density-compact": "4px",
+          "unit-base": "4px",
+          "grid-gutter": "8px",
+          "panel-margin": "12px",
+          "density-standard": "8px",
+          "density-spacious": "16px"
+        },
+        "fontFamily": {
+          "body-sm": ["JetBrains Mono"],
+          "body-lg": ["JetBrains Mono"],
+          "headline-lg": ["JetBrains Mono"],
+          "label-sm": ["JetBrains Mono"],
+          "label-lg": ["JetBrains Mono"],
+          "headline-md": ["JetBrains Mono"],
+          "label-md": ["JetBrains Mono"],
+          "headline-sm": ["JetBrains Mono"],
+          "body-md": ["JetBrains Mono"],
+          "headline-xl": ["JetBrains Mono"],
+          "tabular-nums": ["JetBrains Mono"],
+          "headline-xl-mobile": ["JetBrains Mono"]
+        },
+        "fontSize": {
+          "body-sm": ["11px", {"lineHeight": "16px", "fontWeight": "400"}],
+          "body-lg": ["15px", {"lineHeight": "22px", "fontWeight": "400"}],
+          "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+          "label-sm": ["9px", {"lineHeight": "12px", "letterSpacing": "0.08em", "fontWeight": "500"}],
+          "label-lg": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+          "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+          "label-md": ["10px", {"lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+          "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+          "body-md": ["13px", {"lineHeight": "20px", "fontWeight": "400"}],
+          "headline-xl": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+          "tabular-nums": ["14px", {"lineHeight": "20px", "fontWeight": "600"}]
+        }
+      }
+    }
+  }
+</script><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..900&amp;display=swap" rel="stylesheet"><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-[#fbf9f1] font-body-md text-[#141b2c] flex flex-col min-h-screen"><header class="fixed top-0 inset-x-0 z-50 bg-[#fbf9f1]/90 backdrop-blur-xl pt-safe"><div class="h-16 px-panel-margin flex items-center justify-between"><div class="flex items-center gap-density-standard"><span class="material-symbols-outlined text-[#141b2c] text-headline-md">shield_locked</span><h1 class="text-headline-md font-headline-md uppercase tracking-tight text-[#141b2c]">Suraksha Nav</h1></div><div class="flex items-center gap-density-compact"><div class="flex items-center gap-1 px-2 py-1 bg-[#141b2c]/5 rounded border border-[#141b2c]/10"><span class="w-2 h-2 rounded-full bg-[#006a61] animate-pulse"></span><span class="text-label-sm text-[#006a61] font-tabular-nums">Suraksha Nav</span></div><div class="w-8 h-8 rounded-full bg-[#141b2c] flex items-center justify-center"><span class="material-symbols-outlined text-white text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full px-panel-margin pt-16 pb-24 bg-[#fbf9f1] flex-grow"><div class="flex flex-col w-full items-center justify-center py-12 px-panel-margin space-y-8 select-none">
+<!-- Central Telemetry Visualizer / Radar Target -->
+<div class="relative w-32 h-32 flex items-center justify-center bg-[#141b2c] rounded-full shadow-xl">
+<div class="absolute inset-0 rounded-full border border-[#006a61]/30 animate-ping opacity-30"></div>
+<div class="absolute inset-2 rounded-full border border-[#006a61]/50 animate-pulse"></div>
+<div class="absolute inset-6 rounded-full bg-[#1f293d] flex items-center justify-center">
+<span class="material-symbols-outlined text-[#6bd8cb] text-4xl" style="font-variation-settings: 'FILL' 1;">radar</span>
+</div>
+<!-- Rotating HUD Indicator -->
+<div class="absolute inset-0 rounded-full border-t-2 border-[#6bd8cb] animate-spin" style="animation-duration: 3s;"></div>
+</div>
+<!-- Branding & Wordmark -->
+<div class="text-center space-y-2">
+<div class="inline-flex items-center gap-2 px-3 py-1 bg-[#141b2c] rounded-full text-label-sm text-white font-tabular-nums uppercase tracking-widest shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#6bd8cb] animate-pulse"></span>
+      ISRO / ISH PS 26168
+    </div>
+<h1 class="text-headline-xl font-headline-xl text-[#141b2c] tracking-tighter">Suraksha Nav</h1>
+<p class="text-body-md text-[#45474c] font-tabular-nums">
+      Intelligent Dead Reckoning — Prototype
+    </p>
+</div>
+<!-- Sensor Calibration Telemetry Box -->
+<div class="w-full max-w-sm bg-[#141b2c] text-white rounded-xl p-4 space-y-3 shadow-md">
+<div class="flex items-center justify-between text-label-sm text-gray-300 uppercase">
+<span class="">Hardware Handshake</span>
+<span class="text-[#6bd8cb] font-tabular-nums" id="calib-status">READY</span>
+</div>
+<!-- Sensor Items -->
+<div class="space-y-2">
+<!-- IMU -->
+<div class="flex items-center justify-between p-2 bg-[#1f293d] rounded-lg">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#6bd8cb] text-[18px]">sensors</span>
+<span class="text-body-sm text-white font-tabular-nums">IMU_6AXIS_ACCEL</span>
+</div>
+<span class="text-label-sm text-[#6bd8cb] font-tabular-nums" id="sensor-imu">SYNC [OK]</span>
+</div>
+<!-- GNSS -->
+<div class="flex items-center justify-between p-2 bg-[#1f293d] rounded-lg">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#ffdcc3] text-[18px]">satellite_alt</span>
+<span class="text-body-sm text-white font-tabular-nums">GNSS_L1_RECEIVER</span>
+</div>
+<span class="text-label-sm text-[#6bd8cb] font-tabular-nums" id="sensor-gnss">SYNC [OK]</span>
+</div>
+<!-- Magnetometer -->
+<div class="flex items-center justify-between p-2 bg-[#1f293d] rounded-lg">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#6bd8cb] text-[18px]">explore</span>
+<span class="text-body-sm text-white font-tabular-nums">3AXIS_MAGNETOMETER</span>
+</div>
+<span class="text-label-sm text-[#6bd8cb] font-tabular-nums" id="sensor-mag">SYNC [OK]</span>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="space-y-1 pt-2">
+<div class="flex justify-between text-label-sm text-gray-300 font-tabular-nums">
+<span class="">BUFFER_LOAD</span>
+<span id="progress-text" class="">100%</span>
+</div>
+<div class="w-full h-1.5 bg-[#0a0f18] rounded-full overflow-hidden">
+<div class="h-full bg-[#6bd8cb] transition-all duration-200" id="progress-bar" style="width: 100%;"></div>
+</div>
+</div>
+</div>
+<!-- Action / Bypass -->
+<div class="pt-2">
+<button class="px-6 py-3 bg-[#141b2c] text-white font-label-md uppercase tracking-wider rounded-lg shadow-lg hover:brightness-125 active:scale-95 transition-all flex items-center gap-2" onclick="advanceToDashboard()">
+<span class="">Initialize Console</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<script>
+  let progress = 0;
+  const progressBar = document.getElementById('progress-bar');
+  const progressText = document.getElementById('progress-text');
+  const calibStatus = document.getElementById('calib-status');
+  const sensorGnss = document.getElementById('sensor-gnss');
+
+  const interval = setInterval(() => {
+    progress += 4;
+    if (progress <= 100) {
+      progressBar.style.width = progress + '%';
+      progressText.textContent = progress + '%';
+      if (progress > 60) {
+        sensorGnss.textContent = 'SYNC [OK]';
+        sensorGnss.className = 'text-label-sm text-[#6bd8cb] font-tabular-nums';
+      }
+      if (progress === 100) {
+        calibStatus.textContent = 'READY';
+        setTimeout(advanceToDashboard, 400);
+      }
+    } else {
+      clearInterval(interval);
+    }
+  }, 75);
+
+  function advanceToDashboard() {
+    clearInterval(interval);
+    const navLink = document.querySelector('nav a[data-path="main-dashboard"]') || document.querySelector('nav a');
+    if (navLink) {
+      navLink.click();
+    } else {
+      console.log("Navigating to Dashboard...");
+    }
+  }
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-[#fbf9f1]/90 backdrop-blur-xl border-t border-[#141b2c]/10" data-active-classes="bg-[#141b2c] text-white"><div class="flex justify-around items-center h-16 px-panel-margin"><a aria-current="page" class="flex flex-col items-center justify-center gap-1 w-20 h-12 rounded transition-all bg-[#141b2c] text-white" data-path="main-dashboard" href="#"><span class="material-symbols-outlined text-[20px]">dashboard</span><span class="text-label-sm uppercase">Dashboard</span></a><a class="flex flex-col items-center justify-center gap-1 w-20 h-12 rounded transition-all text-[#45474c] hover:text-[#141b2c]" data-path="drive-log-history" href="#"><span class="material-symbols-outlined text-[20px]">history</span><span class="text-label-sm uppercase">Logs</span></a><a class="flex flex-col items-center justify-center gap-1 w-20 h-12 rounded transition-all text-[#45474c] hover:text-[#141b2c]" data-path="about-judge-info" href="#"><span class="material-symbols-outlined text-[20px]">info</span><span class="text-label-sm uppercase">About</span></a></div></nav>
+
+
+
+
+
+</body></html>

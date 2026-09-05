@@ -1,12 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="app_name">Dead Reckoning Lite</string>
-	<string name="telemetry_title">LIVE TELEMETRY</string>
-	<string name="mode_gnss">GNSS LOCK</string>
-	<string name="mode_dead_reckoning">DEAD RECKONING</string>
-	<string name="simulate_tunnel">Simulate tunnel</string>
-	<string name="simulate_tunnel_description">Switch off GNSS and project the path</string>
-	<string name="waiting_for_sensor">Waiting for sensor data...</string>
-	<string name="waiting_for_location">Waiting for location...</string>
-	<string name="map_attribution">OpenStreetMap</string>
+    <!-- App Identity -->
+    <string name="app_name">DR Lite</string>
+    <string name="app_name_full">Dead Reckoning Lite</string>
+    <string name="app_subtitle">Intelligent Dead Reckoning — Prototype</string>
+    <string name="isro_badge">ISRO / ISH PS 26168</string>
+    <string name="version_label">DR_LITE_V2.4</string>
+
+    <!-- ============================================================ -->
+    <!--  Splash Screen                                                -->
+    <!-- ============================================================ -->
+    <string name="splash_title_dr">DR</string>
+    <string name="splash_title_lite">LITE</string>
+    <string name="hardware_handshake">HARDWARE HANDSHAKE</string>
+    <string name="hardware_ready">READY</string>
+    <string name="hardware_all_nominal">ALL SYSTEMS NOMINAL</string>
+    <string name="sensor_imu">IMU_6AXIS_ACCEL</string>
+    <string name="sensor_imu_detail">Update Rate: 400Hz</string>
+    <string name="sensor_gnss">GNSS_L1_RECEIVER</string>
+    <string name="sensor_gnss_detail">Lock: 18 Sats (GPS/IRNSS)</string>
+    <string name="sensor_mag">3AXIS_MAGNETOMETER</string>
+    <string name="sensor_mag_detail">Calibrated Bias: 0.02uT</string>
+    <string name="sync_ok">SYNC [OK]</string>
+    <string name="buffer_load">BUFFER_LOAD</string>
+    <string name="buffer_percent">100%</string>
+    <string name="buffer_detail">Buffer: 4096 / 4096 KB</string>
+    <string name="ready_deploy">Ready for deployment</string>
+    <string name="initialize_console">INITIALIZE CONSOLE</string>
+
+    <!-- ============================================================ -->
+    <!--  Permission Screen                                            -->
+    <!-- ============================================================ -->
+    <string name="permission_title">LOCATION ACCESS\nNEEDED</string>
+    <string name="permission_rationale">Continuous GPS and high-frequency motion sensor access are required for accurate vehicle position tracking during simulated signal-loss testing.</string>
+    <string name="imu_poll_rate_label">IMU_POLL_RATE</string>
+    <string name="imu_poll_rate_value">100 Hz</string>
+    <string name="gnss_correction_label">GNSS_CORRECTION</string>
+    <string name="gnss_correction_value">RTK_ACTIVE</string>
+    <string name="grant_permission">GRANT PERMISSION</string>
+    <string name="why_need_permission">WHY DO YOU NEED THIS?</string>
+    <string name="permission_denied_message">Location permission is required for this app to function. Please grant it in Settings.</string>
+    <string name="sys_init_label">SYS_INIT // SEC_01</string>
+
+    <!-- ============================================================ -->
+    <!--  Main Dashboard                                               -->
+    <!-- ============================================================ -->
+    <string name="main_dashboard">MAIN DASHBOARD</string>
+    <string name="dr_active">DR_ACTIVE</string>
+    <string name="gnss_lock">GNSS LOCK : %d SVs</string>
+    <string name="gnss_lock_default">GNSS LOCK : 0 SVs</string>
+    <string name="gps_trace">GPS TRACE</string>
+    <string name="dr_projection">DR PROJECTION</string>
+    <string name="csv_log_active">CSV LOG: ACTIVE</string>
+    <string name="csv_log_inactive">CSV LOG: IDLE</string>
+
+    <!-- Mode -->
+    <string name="mode_label">MODE</string>
+    <string name="mode_gnss">GNSS</string>
+    <string name="mode_dead_reckoning">DEAD RECKONING</string>
+
+    <!-- Speed -->
+    <string name="speed_label">SPEED</string>
+    <string name="speed_unit">KM/H</string>
+    <string name="speed_default">0.0</string>
+
+    <!-- Sensors -->
+    <string name="accel_label">ACCEL (M/S²)</string>
+    <string name="gyro_label">GYRO (RAD/S)</string>
+    <string name="axis_x">X</string>
+    <string name="axis_y">Y</string>
+    <string name="axis_z">Z</string>
+    <string name="sensor_default">0.00</string>
+
+    <!-- Position -->
+    <string name="position_label">POSITION (WGS84)</string>
+    <string name="latitude_label">LATITUDE</string>
+    <string name="longitude_label">LONGITUDE</string>
+    <string name="utc_label">UTC %s</string>
+    <string name="position_default">—</string>
+
+    <!-- Drift -->
+    <string name="estimated_drift">ESTIMATED DRIFT</string>
+    <string name="drift_default">0.0 m</string>
+
+    <!-- Simulate Tunnel -->
+    <string name="simulate_tunnel">SIMULATE TUNNEL</string>
+    <string name="simulate_tunnel_description">Force Dead Reckoning fallback</string>
+
+    <!-- Telemetry -->
+    <string name="telemetry_title">LIVE TELEMETRY</string>
+    <string name="waiting_for_sensor">Waiting for sensor…</string>
+    <string name="waiting_for_location">Waiting for location…</string>
+    <string name="map_attribution">© OpenStreetMap contributors</string>
+
+    <!-- ============================================================ -->
+    <!--  Drive Log History                                            -->
+    <!-- ============================================================ -->
+    <string name="drive_log_history">DRIVE LOG\nHISTORY</string>
+    <string name="drive_log_title">DRIVE LOG HISTORY</string>
+    <string name="search_sessions_hint">Search sessions by ID or timestamp…</string>
+    <string name="total_logs">TOTAL LOGS</string>
+    <string name="storage_label">STORAGE</string>
+    <string name="time_label">TIME</string>
+    <string name="filter_label">FILTER</string>
+    <string name="sort_label">SORT: TIMESTAMP_DESC</string>
+    <string name="recorded_sessions">RECORDED CSV SESSIONS</string>
+    <string name="rows_label">Rows:</string>
+    <string name="size_label">Size:</string>
+    <string name="status_verified">VERIFIED</string>
+    <string name="status_tuning">TUNING</string>
+    <string name="csv_download">CSV</string>
+    <string name="sync_all_new">Sync All New</string>
+    <string name="clear_cache">Clear Cache</string>
+    <string name="no_logs_found">No drive logs found.\nStart a session from the Dashboard.</string>
+    <string name="cloud_sync_title">Cloud Sync 100% Verified</string>
+    <string name="cloud_sync_subtitle">All telemetry sessions backed up securely</string>
+
+    <!-- ============================================================ -->
+    <!--  Bottom Navigation                                            -->
+    <!-- ============================================================ -->
+    <string name="nav_dashboard">DASHBOARD</string>
+    <string name="nav_logs">LOGS</string>
+    <string name="nav_about">ABOUT</string>
+
+    <!-- ============================================================ -->
+    <!--  Theme Toggle                                                 -->
+    <!-- ============================================================ -->
+    <string name="theme_toggle">Toggle Theme</string>
+    <string name="theme_dark">Dark Mode</string>
+    <string name="theme_light">Light Mode</string>
+
+    <!-- ============================================================ -->
+    <!--  Content Descriptions (Accessibility)                         -->
+    <!-- ============================================================ -->
+    <string name="cd_app_logo">DR Lite Logo</string>
+    <string name="cd_zoom_in">Zoom In</string>
+    <string name="cd_zoom_out">Zoom Out</string>
+    <string name="cd_recenter">Recenter Map</string>
+    <string name="cd_user_profile">User Profile</string>
+    <string name="cd_theme_toggle">Toggle Dark/Light Theme</string>
+    <string name="cd_sensor_icon">Sensor Icon</string>
+    <string name="cd_filter">Filter Sessions</string>
+    <string name="cd_export_csv">Export CSV</string>
 </resources>
