@@ -1,0 +1,782 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Main Dashboard — Matches main_dashboard_dr_lite_horizon reference -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface">
+
+    <!-- ===== Header Bar ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:background="?attr/colorSurface"
+        android:elevation="2dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/main_dashboard"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="18sp"
+            android:fontFamily="monospace"
+            android:textStyle="bold"
+            android:textAllCaps="true"
+            android:maxLines="2" />
+
+        <!-- DR Active Badge -->
+        <LinearLayout
+            android:id="@+id/header_dr_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_chip"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:id="@+id/header_dr_dot"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/dot_gnss" />
+
+            <TextView
+                android:id="@+id/header_dr_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/dr_active"
+                android:textColor="?attr/colorSecondary"
+                android:textSize="9sp"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.05" />
+        </LinearLayout>
+
+        <!-- Theme Toggle -->
+        <ImageButton
+            android:id="@+id/btn_theme_toggle"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_day"
+            android:contentDescription="@string/cd_theme_toggle"
+            app:tint="?attr/colorOnSurface" />
+    </LinearLayout>
+
+    <!-- ===== Scrollable Content ===== -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="8dp">
+
+            <!-- ===== Map Section ===== -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="360dp"
+                android:background="@drawable/bg_card"
+                android:clipChildren="true"
+                android:clipToPadding="true">
+
+                <!-- OSM Map -->
+                <org.osmdroid.views.MapView
+                    android:id="@+id/map_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                <!-- GNSS Lock HUD Badge (top-left overlay) -->
+                <LinearLayout
+                    android:id="@+id/gnss_lock_badge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|start"
+                    android:layout_margin="8dp"
+                    android:background="@drawable/bg_chip"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:background="@drawable/dot_gnss" />
+
+                    <TextView
+                        android:id="@+id/gnss_lock_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/gnss_lock_default"
+                        android:textColor="?attr/colorSecondary"
+                        android:textSize="9sp"
+                        android:fontFamily="monospace"
+                        android:letterSpacing="0.05"
+                        android:textAllCaps="true" />
+                </LinearLayout>
+
+                <!-- Zoom Controls (top-right overlay) -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="8dp"
+                    android:orientation="vertical">
+
+                    <ImageButton
+                        android:id="@+id/btn_zoom_in"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_chip"
+                        android:src="@android:drawable/ic_menu_add"
+                        android:contentDescription="@string/cd_zoom_in"
+                        app:tint="?attr/colorOnSurface" />
+
+                    <ImageButton
+                        android:id="@+id/btn_zoom_out"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_marginTop="4dp"
+                        android:background="@drawable/bg_chip"
+                        android:src="@android:drawable/ic_menu_close_clear_cancel"
+                        android:contentDescription="@string/cd_zoom_out"
+                        app:tint="?attr/colorOnSurface" />
+
+                    <ImageButton
+                        android:id="@+id/btn_recenter"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_chip"
+                        android:src="@android:drawable/ic_menu_mylocation"
+                        android:contentDescription="@string/cd_recenter"
+                        app:tint="?attr/colorSecondary" />
+                </LinearLayout>
+
+                <!-- Map Legend Bar (bottom overlay) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:background="@drawable/bg_chip"
+                    android:padding="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <!-- GPS Trace Legend -->
+                    <View
+                        android:layout_width="12dp"
+                        android:layout_height="3dp"
+                        android:background="@color/gnss_green" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/gps_trace"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="9sp"
+                        android:fontFamily="monospace"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05" />
+
+                    <!-- DR Projection Legend -->
+                    <View
+                        android:layout_width="12dp"
+                        android:layout_height="3dp"
+                        android:layout_marginStart="16dp"
+                        android:background="@color/dead_reckoning_amber" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/dr_projection"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="9sp"
+                        android:fontFamily="monospace"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <!-- CSV Log Status -->
+                    <View
+                        android:id="@+id/csv_log_dot"
+                        android:layout_width="6dp"
+                        android:layout_height="6dp"
+                        android:background="@drawable/dot_dr" />
+
+                    <TextView
+                        android:id="@+id/csv_log_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/csv_log_active"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="9sp"
+                        android:fontFamily="monospace"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <!-- ===== Mode + Speed Row ===== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <!-- Mode Badge -->
+                <LinearLayout
+                    android:id="@+id/mode_badge_container"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_card"
+                    android:padding="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:id="@+id/mode_dot"
+                        android:layout_width="10dp"
+                        android:layout_height="10dp"
+                        android:background="@drawable/dot_gnss" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/mode_label"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="10sp"
+                        android:fontFamily="monospace"
+                        android:textAllCaps="true"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/mode_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/mode_gnss"
+                        android:textColor="?attr/colorSecondary"
+                        android:textSize="12sp"
+                        android:fontFamily="monospace"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05" />
+                </LinearLayout>
+
+                <View android:layout_width="6dp" android:layout_height="1dp" />
+
+                <!-- Speed -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_card"
+                    android:padding="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/speed_label"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="10sp"
+                        android:fontFamily="monospace"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/speed_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/speed_default"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="24sp"
+                        android:fontFamily="monospace"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:text="@string/speed_unit"
+                        android:textColor="?attr/colorSecondary"
+                        android:textSize="10sp"
+                        android:fontFamily="monospace" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ===== Accel + Gyro Grid ===== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+
+                <!-- Accelerometer Card -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_card"
+                    android:padding="10dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/accel_label"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="9sp"
+                        android:fontFamily="monospace"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <!-- X -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_sensor_cell"
+                            android:padding="6dp"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/axis_x"
+                                android:textColor="?attr/colorOutline"
+                                android:textSize="8sp"
+                                android:fontFamily="monospace" />
+
+                            <TextView
+                                android:id="@+id/accel_x"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/sensor_default"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textSize="12sp"
+                                android:fontFamily="monospace" />
+                        </LinearLayout>
+
+                        <View android:layout_width="3dp" android:layout_height="1dp" />
+
+                        <!-- Y -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_sensor_cell"
+                            android:padding="6dp"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/axis_y"
+                                android:textColor="?attr/colorOutline"
+                                android:textSize="8sp"
+                                android:fontFamily="monospace" />
+
+                            <TextView
+                                android:id="@+id/accel_y"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/sensor_default"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textSize="12sp"
+                                android:fontFamily="monospace" />
+                        </LinearLayout>
+
+                        <View android:layout_width="3dp" android:layout_height="1dp" />
+
+                        <!-- Z -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_sensor_cell"
+                            android:padding="6dp"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/axis_z"
+                                android:textColor="?attr/colorOutline"
+                                android:textSize="8sp"
+                                android:fontFamily="monospace" />
+
+                            <TextView
+                                android:id="@+id/accel_z"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/sensor_default"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textSize="12sp"
+                                android:fontFamily="monospace" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <View android:layout_width="6dp" android:layout_height="1dp" />
+
+                <!-- Gyroscope Card -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_card"
+                    android:padding="10dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/gyro_label"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="9sp"
+                        android:fontFamily="monospace"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <!-- X -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_sensor_cell"
+                            android:padding="6dp"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/axis_x"
+                                android:textColor="?attr/colorOutline"
+                                android:textSize="8sp"
+                                android:fontFamily="monospace" />
+
+                            <TextView
+                                android:id="@+id/gyro_x"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/sensor_default"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textSize="12sp"
+                                android:fontFamily="monospace" />
+                        </LinearLayout>
+
+                        <View android:layout_width="3dp" android:layout_height="1dp" />
+
+                        <!-- Y -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_sensor_cell"
+                            android:padding="6dp"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/axis_y"
+                                android:textColor="?attr/colorOutline"
+                                android:textSize="8sp"
+                                android:fontFamily="monospace" />
+
+                            <TextView
+                                android:id="@+id/gyro_y"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/sensor_default"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textSize="12sp"
+                                android:fontFamily="monospace" />
+                        </LinearLayout>
+
+                        <View android:layout_width="3dp" android:layout_height="1dp" />
+
+                        <!-- Z -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_sensor_cell"
+                            android:padding="6dp"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/axis_z"
+                                android:textColor="?attr/colorOutline"
+                                android:textSize="8sp"
+                                android:fontFamily="monospace" />
+
+                            <TextView
+                                android:id="@+id/gyro_z"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/sensor_default"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textSize="12sp"
+                                android:fontFamily="monospace" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ===== Position (WGS84) Card ===== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_card"
+                android:padding="12dp"
+                android:orientation="vertical">
+
+                <!-- Header: Position label + UTC time -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/position_label"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="9sp"
+                        android:fontFamily="monospace"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:id="@+id/utc_time"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="?attr/colorTertiary"
+                        android:textSize="9sp"
+                        android:fontFamily="monospace"
+                        android:letterSpacing="0.05" />
+                </LinearLayout>
+
+                <!-- Lat/Lon Display -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_sensor_cell"
+                    android:padding="10dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/latitude_label"
+                            android:textColor="?attr/colorOutline"
+                            android:textSize="8sp"
+                            android:fontFamily="monospace"
+                            android:letterSpacing="0.05" />
+
+                        <TextView
+                            android:id="@+id/latitude_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/position_default"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="13sp"
+                            android:fontFamily="monospace" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/longitude_label"
+                            android:textColor="?attr/colorOutline"
+                            android:textSize="8sp"
+                            android:fontFamily="monospace"
+                            android:letterSpacing="0.05" />
+
+                        <TextView
+                            android:id="@+id/longitude_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/position_default"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="13sp"
+                            android:fontFamily="monospace" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Drift Estimate Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/estimated_drift"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="9sp"
+                        android:fontFamily="monospace"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:id="@+id/drift_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/drift_default"
+                        android:textColor="?attr/colorSecondary"
+                        android:textSize="12sp"
+                        android:fontFamily="monospace" />
+
+                    <View
+                        android:id="@+id/drift_dot"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/dot_gnss" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ===== Simulate Tunnel Toggle ===== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_card"
+                android:padding="14dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <!-- Icon placeholder -->
+                <View
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/bg_sensor_cell" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/simulate_tunnel"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="11sp"
+                        android:fontFamily="monospace"
+                        android:textStyle="bold"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/simulate_tunnel_description"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="10sp"
+                        android:fontFamily="monospace" />
+                </LinearLayout>
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/tunnel_switch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- ===== Bottom Navigation ===== -->
+    <include layout="@layout/layout_bottom_nav" />
+
+</LinearLayout>

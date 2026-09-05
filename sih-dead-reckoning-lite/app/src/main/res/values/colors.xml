@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ============================================================ -->
+    <!--  DR Lite — Dark Theme (Horizon) Color Palette                 -->
+    <!--  Extracted from main_dashboard_dr_lite_horizon reference       -->
+    <!-- ============================================================ -->
+
+    <!-- Core Surface Colors (Dark) -->
+    <color name="surface_dark">#FF07151E</color>
+    <color name="surface_container_dark">#FF13212A</color>
+    <color name="surface_container_high_dark">#FF1E2C35</color>
+    <color name="surface_container_low_dark">#FF0F1D26</color>
+    <color name="surface_container_lowest_dark">#FF031018</color>
+    <color name="surface_dim_dark">#FF07151E</color>
+    <color name="surface_bright_dark">#FF2D3B45</color>
+
+    <!-- Core Text Colors (Dark) -->
+    <color name="on_surface_dark">#FFD6E4F1</color>
+    <color name="on_surface_variant_dark">#FFBEC8CC</color>
+    <color name="outline_dark">#FF889296</color>
+    <color name="outline_variant_dark">#FF3F484C</color>
+
+    <!-- Primary (Teal/Cyan) -->
+    <color name="primary_dark">#FF82D2EB</color>
+    <color name="on_primary_dark">#FF003642</color>
+    <color name="primary_container_dark">#FF4A9CB4</color>
+
+    <!-- Secondary (Same family) -->
+    <color name="secondary_dark">#FF8ED0E8</color>
+    <color name="on_secondary_dark">#FF003543</color>
+    <color name="secondary_container_dark">#FF005A6F</color>
+
+    <!-- Tertiary (Amber/Gold) -->
+    <color name="tertiary_dark">#FFE3C289</color>
+    <color name="on_tertiary_dark">#FF412D02</color>
+    <color name="tertiary_container_dark">#FFAB8E5A</color>
+
+    <!-- Error -->
+    <color name="error_dark">#FFFFB4AB</color>
+    <color name="on_error_dark">#FF690005</color>
+    <color name="error_container_dark">#FF93000A</color>
+
+    <!-- ============================================================ -->
+    <!--  DR Lite — Light Theme Color Palette                          -->
+    <!--  Extracted from splash_dr_lite_light_1 reference               -->
+    <!-- ============================================================ -->
+
+    <!-- Core Surface Colors (Light) -->
+    <color name="surface_light">#FFF7F3EB</color>
+    <color name="surface_container_light">#FFEDE8E0</color>
+    <color name="surface_container_high_light">#FFE8E3DB</color>
+    <color name="surface_container_low_light">#FFF2EDE5</color>
+    <color name="surface_container_lowest_light">#FFFFFFFF</color>
+    <color name="surface_dim_light">#FFD8D3CB</color>
+    <color name="surface_bright_light">#FFF7F3EB</color>
+
+    <!-- Core Text Colors (Light) -->
+    <color name="on_surface_light">#FF1A1C18</color>
+    <color name="on_surface_variant_light">#FF44483E</color>
+    <color name="outline_light">#FF74796E</color>
+    <color name="outline_variant_light">#FFC4C8BA</color>
+
+    <!-- Primary (Deep Teal) -->
+    <color name="primary_light">#FF0D7377</color>
+    <color name="on_primary_light">#FFFFFFFF</color>
+    <color name="primary_container_light">#FF9EF0F0</color>
+
+    <!-- Secondary -->
+    <color name="secondary_light">#FF4A635B</color>
+    <color name="on_secondary_light">#FFFFFFFF</color>
+    <color name="secondary_container_light">#FFCCE8DE</color>
+
+    <!-- Tertiary (Warm Amber) -->
+    <color name="tertiary_light">#FF594316</color>
+    <color name="on_tertiary_light">#FFFFFFFF</color>
+    <color name="tertiary_container_light">#FFFFDEA6</color>
+
+    <!-- Error (Light) -->
+    <color name="error_light">#FFBA1A1A</color>
+    <color name="on_error_light">#FFFFFFFF</color>
+    <color name="error_container_light">#FFFFDAD6</color>
+
+    <!-- ============================================================ -->
+    <!--  Semantic / Functional Colors (Shared)                        -->
+    <!-- ============================================================ -->
+
+    <!-- GNSS Mode -->
+    <color name="gnss_green">#FF2F9E44</color>
+    <color name="gnss_green_light">#FF4CAF50</color>
+    <color name="gnss_badge_bg">#332F9E44</color>
+
+    <!-- Dead Reckoning Mode -->
+    <color name="dead_reckoning_amber">#FFE88916</color>
+    <color name="dr_amber_light">#FFFF9800</color>
+    <color name="dr_badge_bg">#33E88916</color>
+
+    <!-- Map Overlays -->
+    <color name="map_scrim_dark">#CC07151E</color>
+    <color name="map_scrim_light">#CCF7F3EB</color>
+
+    <!-- CSV Log Active Indicator -->
+    <color name="csv_log_active">#FFEF5350</color>
+
+    <!-- Status badges -->
+    <color name="status_verified">#FF2F9E44</color>
+    <color name="status_tuning">#FFE88916</color>
+    <color name="status_pending">#FF889296</color>
+
+    <!-- Sync badge background -->
+    <color name="sync_ok_bg_dark">#1A8ED0E8</color>
+    <color name="sync_ok_bg_light">#1A0D7377</color>
+
+    <!-- Splash / Progress -->
+    <color name="progress_track_dark">#FF1E2C35</color>
+    <color name="progress_indicator_dark">#FF82D2EB</color>
+    <color name="progress_track_light">#FFE8E3DB</color>
+    <color name="progress_indicator_light">#FF0D7377</color>
+
+    <!-- Button -->
+    <color name="button_primary_dark">#FF82D2EB</color>
+    <color name="button_on_primary_dark">#FF003642</color>
+    <color name="button_primary_light">#FF0D7377</color>
+    <color name="button_on_primary_light">#FFFFFFFF</color>
+
+    <!-- Backward compatibility aliases (used by existing code) -->
+    <color name="ink">#17211B</color>
+    <color name="surface">#F7F8F3</color>
+    <color name="surface_elevated">#FFFFFF</color>
+    <color name="muted_text">#65736A</color>
+    <color name="map_scrim">#CCF7F8F3</color>
+</resources>
