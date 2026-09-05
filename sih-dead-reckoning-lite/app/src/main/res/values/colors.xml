@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<color name="ink">#17211B</color>
+	<color name="surface">#F7F8F3</color>
+	<color name="surface_elevated">#FFFFFF</color>
+	<color name="gnss_green">#2F9E44</color>
+	<color name="dead_reckoning_amber">#E88916</color>
+	<color name="muted_text">#65736A</color>
+	<color name="map_scrim">#CCF7F8F3</color>
+</resources>

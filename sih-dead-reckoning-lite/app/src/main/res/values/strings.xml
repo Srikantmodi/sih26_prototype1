@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">Dead Reckoning Lite</string>
+	<string name="telemetry_title">LIVE TELEMETRY</string>
+	<string name="mode_gnss">GNSS LOCK</string>
+	<string name="mode_dead_reckoning">DEAD RECKONING</string>
+	<string name="simulate_tunnel">Simulate tunnel</string>
+	<string name="simulate_tunnel_description">Switch off GNSS and project the path</string>
+	<string name="waiting_for_sensor">Waiting for sensor data...</string>
+	<string name="waiting_for_location">Waiting for location...</string>
+	<string name="map_attribution">OpenStreetMap</string>
+</resources>
