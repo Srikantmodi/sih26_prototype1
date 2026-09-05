@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider paths configuration for CsvExporter.
+
+    This file tells FileProvider which directories it's allowed to expose
+    via content:// URIs. Only the "logs" subdirectory under externalFilesDir
+    is shared — no other app data is exposed.
+
+    Referenced by: AndroidManifest.xml → <provider> → <meta-data>
+    Used by:       CsvExporter.shareLatestLog()
+-->
+<paths>
+    <!--
+        Maps context.getExternalFilesDir(null)/logs/ to the content URI
+        path segment "logs". This is the directory where SensorLogger
+        writes CSV files (via Constants.LOG_DIR_NAME).
+
+        The resulting content URI looks like:
+        content://com.sih.deadreckoninglite.fileprovider/logs/drive_1234567890.csv
+    -->
+    <external-files-path
+        name="logs"
+        path="logs/" />
+</paths>
