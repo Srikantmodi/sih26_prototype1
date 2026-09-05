@@ -6,6 +6,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.util.Log
+import com.sih.deadreckoninglite.util.Constants
 
 /**
  * Manages accelerometer + gyroscope registration via Android [SensorManager].
@@ -197,7 +198,7 @@ class ImuManager(context: Context) {
             sensorManager.registerListener(
                 sensorListener,
                 accelSensor,
-                SensorManager.SENSOR_DELAY_GAME
+                Constants.IMU_SENSOR_DELAY
             )
             Log.i(TAG, "Accelerometer registered: ${accelSensor.name}, " +
                     "maxRange=${accelSensor.maximumRange}, " +
@@ -212,7 +213,7 @@ class ImuManager(context: Context) {
             sensorManager.registerListener(
                 sensorListener,
                 gyroSensor,
-                SensorManager.SENSOR_DELAY_GAME
+                Constants.IMU_SENSOR_DELAY
             )
             Log.i(TAG, "Gyroscope registered: ${gyroSensor.name}, " +
                     "maxRange=${gyroSensor.maximumRange}, " +

@@ -12,6 +12,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.sih.deadreckoninglite.util.Constants
 
 /**
  * Wraps [FusedLocationProviderClient] to produce a continuous ~1 Hz stream
@@ -85,8 +86,8 @@ class GpsProvider(context: Context) {
      * - Priority = HIGH_ACCURACY → uses GPS hardware, not just network/WiFi
      */
     private val locationRequest: LocationRequest =
-        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1_000L)
-            .setMinUpdateIntervalMillis(500L)
+        LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, Constants.GPS_UPDATE_INTERVAL_MS)
+            .setMinUpdateIntervalMillis(Constants.GPS_FASTEST_INTERVAL_MS)
             .build()
 
     /**

@@ -1,5 +1,6 @@
 package com.sih.deadreckoninglite.location
 
+import com.sih.deadreckoninglite.util.Constants
 import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.sin
@@ -127,8 +128,6 @@ data class GpsSample(
         private fun f6(v: Double): String = "%.6f".format(v)
         private fun f8(v: Double): String = "%.8f".format(v)
 
-        private const val EARTH_RADIUS_M = 6_371_000.0
-
         /**
          * Standard Haversine formula — accurate for any distance on a sphere.
          */
@@ -142,7 +141,7 @@ data class GpsSample(
                     cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
                     sin(dLon / 2) * sin(dLon / 2)
             val c = 2 * asin(sqrt(a))
-            return EARTH_RADIUS_M * c
+            return Constants.EARTH_RADIUS_M * c
         }
     }
 }
