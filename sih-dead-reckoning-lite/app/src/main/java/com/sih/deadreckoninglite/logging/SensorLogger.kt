@@ -92,26 +92,26 @@ class SensorLogger(context: Context) {
          * Schema: `timestamp_ns,[6 empty IMU fields],gnss_lat,...`
          *
          * The format string in logGps() is: `"${ts}${IMU_EMPTY_COLS},${gpsCsv}"`
-         * IMU_EMPTY_COLS has 6 commas, plus the explicit `,` before gpsCsv = 7 separators.
-         * This produces: ts + 6 empty fields + gpsCsv start boundary = correct alignment.
+         * IMU_EMPTY_COLS has 9 commas, plus the explicit `,` before gpsCsv = 10 separators.
+         * This produces: ts + 9 empty fields + gpsCsv start boundary = correct alignment.
          *
-         * Trace: `12345,,,,,,,28.6,77.2,12.3,3.2` → 10 commas → 11 fields ✅
+         * Trace: `12345,,,,,,,,,,28.6,77.2,12.3,3.2` → 13 commas → 14 fields ✅
          */
-        private const val IMU_EMPTY_COLS = ",,,,,,"  // 6 commas + explicit comma in format = 7 boundaries = 6 empty + gpsCsv start
+        private const val IMU_EMPTY_COLS = ",,,,,,,,,"  // 9 commas + explicit comma in format = 10 boundaries = 9 empty + gpsCsv start
 
         /**
          * Empty columns for GNSS fields when logging an IMU-only row.
-         * Schema: `timestamp_ns,ax,...,gz,[4 empty GNSS fields]`
+         * Schema: `timestamp_ns,ax,...,grav_z,[4 empty GNSS fields]`
          *
          * The format string in logImu() is: `"${ts},${imuCsv}${GNSS_EMPTY_COLS}"`
-         * imuCsv = "ax,ay,az,gx,gy,gz" (6 values with 5 internal commas).
+         * imuCsv = "ax,ay,az,gx,gy,gz,grav_x,grav_y,grav_z" (9 values with 8 internal commas).
          * We need 4 trailing empty fields → 4 commas.
          *
-         * Verification: `12345,ax,ay,az,gx,gy,gz,,,,`
-         *               ts  ^1^2^3^4^5^6   ^7^8^9^10
-         *               = timestamp + 6 IMU values + 4 empties = 11 columns ✅
+         * Verification: `12345,ax,ay,az,gx,gy,gz,grav_x,grav_y,grav_z,,,,`
+         *               ts  ^1^2^3^4^5^6^7^8^9                     ^10^11^12^13
+         *               = timestamp + 9 IMU values + 4 empties = 14 columns ✅
          */
-        private const val GNSS_EMPTY_COLS = ",,,,"   // 4 commas → 4 empty fields after gz
+        private const val GNSS_EMPTY_COLS = ",,,,"   // 4 commas → 4 empty fields after grav_z
     }
 
     private val appContext: Context = context.applicationContext

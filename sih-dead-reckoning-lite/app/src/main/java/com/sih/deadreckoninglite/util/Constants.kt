@@ -126,12 +126,20 @@ object Constants {
 
     /**
      * Interval in milliseconds between tunnel-simulation projection ticks.
-     * At 1000ms (1 Hz), the TunnelSimulator projects a new position once
-     * per second — matching the GPS update rate for a smooth handoff.
+     * At 100ms (10 Hz), the TunnelSimulator projects a new position 10 times
+     * per second — meeting the GNSS+INS fusion 10Hz update rate requirement
+     * from SIH PS-26168 performance benchmarks.
+     *
+     * The ML model (MlSpeedEstimator) already infers at 10Hz (50Hz IMU ÷ 5 downsample);
+     * this tick rate ensures position output matches that inference rate end-to-end.
      *
      * Used by: Member 1 (TunnelSimulator) internal ticker/handler.
      */
-    const val TUNNEL_SIM_TICK_MS: Long = 1_000L
+    const val TUNNEL_SIM_TICK_MS: Long = 100L
+
+    /** Target update rates as per SIH PS-26168 specification */
+    const val RATE_SMARTPHONE_HZ: Int = 10
+    const val RATE_EDGE_FOG_HZ: Int = 200
 
     // ================================================================== //
     //  Map / UI Colors (as ARGB int literals)                             //
@@ -181,4 +189,38 @@ object Constants {
      * Target Android SDK version.
      */
     const val TARGET_SDK_VERSION: Int = 34
+
+    // ================================================================== //
+    //  ML Speed Estimator                                                 //
+    // ================================================================== //
+
+    /**
+     * TFLite model input window size in IMU frames.
+     * Must match WINDOW_SIZE used in the Python training script.
+     */
+    const val ML_WINDOW_SIZE: Int = 20
+
+    /**
+     * Downsample factor for ML model input.
+     * ImuManager emits at ~50 Hz; model trained at 10 Hz.
+     * Every 5th sample is passed to MlSpeedEstimator.addSample().
+     */
+    const val ML_DOWNSAMPLE_FACTOR: Int = 5
+
+    /**
+     * ML speed deadband in km/h.
+     * Predictions below this are treated as zero (stationary).
+     * 1.26 km/h = 0.35 m/s — same threshold as ConstantVelocityReckoner GPS deadband.
+     */
+    const val ML_SPEED_DEADBAND_KMH: Float = 1.26f
+
+    /**
+     * TFLite model asset filename. Must match the file at app/src/main/assets/.
+     */
+    const val ML_MODEL_ASSET: String = "speed_estimator.tflite"
+
+    /**
+     * Normalization stats JSON asset filename. Must match the file at app/src/main/assets/.
+     */
+    const val ML_NORM_STATS_ASSET: String = "norm_stats.json"
 }
