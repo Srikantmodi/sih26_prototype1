@@ -1,0 +1,23 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="44dp"
+    android:height="44dp"
+    android:viewportWidth="44"
+    android:viewportHeight="44">
+    <!-- Outer Glow / Halo -->
+    <path
+        android:fillAlpha="0.25"
+        android:fillColor="#00E5FF"
+        android:pathData="M22,22m-20,0a20,20 0,1 1,40 0a20,20 0,1 1,-40 0" />
+    <!-- White Ring Border -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M22,22m-14,0a14,14 0,1 1,28 0a14,14 0,1 1,-28 0" />
+    <!-- Blue Puck Disc -->
+    <path
+        android:fillColor="#0066FF"
+        android:pathData="M22,22m-11,0a11,11 0,1 1,22 0a11,11 0,1 1,-22 0" />
+    <!-- Center Directional Vehicle Dart / Pointer -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M22,14L28,26L22,23L16,26Z" />
+</vector>

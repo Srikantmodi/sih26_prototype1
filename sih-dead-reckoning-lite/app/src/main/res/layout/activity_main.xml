@@ -119,6 +119,7 @@
                     android:orientation="horizontal">
 
                     <View
+                        android:id="@+id/gnss_lock_dot"
                         android:layout_width="8dp"
                         android:layout_height="8dp"
                         android:background="@drawable/dot_gnss" />
@@ -384,7 +385,10 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:background="@drawable/bg_sensor_cell"
-                            android:padding="6dp"
+                            android:paddingStart="2dp"
+                            android:paddingEnd="2dp"
+                            android:paddingTop="5dp"
+                            android:paddingBottom="5dp"
                             android:gravity="center"
                             android:orientation="vertical">
 
@@ -402,7 +406,8 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/sensor_default"
                                 android:textColor="?attr/colorOnSurface"
-                                android:textSize="12sp"
+                                android:textSize="11sp"
+                                android:singleLine="true"
                                 android:fontFamily="monospace" />
                         </LinearLayout>
 
@@ -414,7 +419,10 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:background="@drawable/bg_sensor_cell"
-                            android:padding="6dp"
+                            android:paddingStart="2dp"
+                            android:paddingEnd="2dp"
+                            android:paddingTop="5dp"
+                            android:paddingBottom="5dp"
                             android:gravity="center"
                             android:orientation="vertical">
 
@@ -432,7 +440,8 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/sensor_default"
                                 android:textColor="?attr/colorOnSurface"
-                                android:textSize="12sp"
+                                android:textSize="11sp"
+                                android:singleLine="true"
                                 android:fontFamily="monospace" />
                         </LinearLayout>
 
@@ -444,7 +453,10 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:background="@drawable/bg_sensor_cell"
-                            android:padding="6dp"
+                            android:paddingStart="2dp"
+                            android:paddingEnd="2dp"
+                            android:paddingTop="5dp"
+                            android:paddingBottom="5dp"
                             android:gravity="center"
                             android:orientation="vertical">
 
@@ -462,7 +474,8 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/sensor_default"
                                 android:textColor="?attr/colorOnSurface"
-                                android:textSize="12sp"
+                                android:textSize="11sp"
+                                android:singleLine="true"
                                 android:fontFamily="monospace" />
                         </LinearLayout>
                     </LinearLayout>
@@ -501,7 +514,10 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:background="@drawable/bg_sensor_cell"
-                            android:padding="6dp"
+                            android:paddingStart="2dp"
+                            android:paddingEnd="2dp"
+                            android:paddingTop="5dp"
+                            android:paddingBottom="5dp"
                             android:gravity="center"
                             android:orientation="vertical">
 
@@ -519,7 +535,8 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/sensor_default"
                                 android:textColor="?attr/colorOnSurface"
-                                android:textSize="12sp"
+                                android:textSize="11sp"
+                                android:singleLine="true"
                                 android:fontFamily="monospace" />
                         </LinearLayout>
 
@@ -531,7 +548,10 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:background="@drawable/bg_sensor_cell"
-                            android:padding="6dp"
+                            android:paddingStart="2dp"
+                            android:paddingEnd="2dp"
+                            android:paddingTop="5dp"
+                            android:paddingBottom="5dp"
                             android:gravity="center"
                             android:orientation="vertical">
 
@@ -549,7 +569,8 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/sensor_default"
                                 android:textColor="?attr/colorOnSurface"
-                                android:textSize="12sp"
+                                android:textSize="11sp"
+                                android:singleLine="true"
                                 android:fontFamily="monospace" />
                         </LinearLayout>
 
@@ -561,7 +582,10 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:background="@drawable/bg_sensor_cell"
-                            android:padding="6dp"
+                            android:paddingStart="2dp"
+                            android:paddingEnd="2dp"
+                            android:paddingTop="5dp"
+                            android:paddingBottom="5dp"
                             android:gravity="center"
                             android:orientation="vertical">
 
@@ -579,7 +603,8 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/sensor_default"
                                 android:textColor="?attr/colorOnSurface"
-                                android:textSize="12sp"
+                                android:textSize="11sp"
+                                android:singleLine="true"
                                 android:fontFamily="monospace" />
                         </LinearLayout>
                     </LinearLayout>
@@ -777,6 +802,104 @@
     </ScrollView>
 
     <!-- ===== Bottom Navigation ===== -->
-    <include layout="@layout/layout_bottom_nav" />
+    <LinearLayout
+        android:id="@+id/bottom_nav_bar"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:orientation="horizontal"
+        android:background="?attr/colorSurface"
+        android:elevation="8dp"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <!-- Dashboard Tab -->
+        <LinearLayout
+            android:id="@+id/nav_dashboard"
+            style="@style/Widget.DRLite.BottomNavItem"
+            android:orientation="vertical"
+            android:background="@drawable/bg_nav_item">
+
+            <ImageView
+                android:id="@+id/nav_dashboard_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_dialog_dialer"
+                app:tint="?attr/colorOnSurface"
+                android:contentDescription="@string/nav_dashboard" />
+
+            <TextView
+                android:id="@+id/nav_dashboard_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/nav_dashboard"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="9sp"
+                android:fontFamily="monospace"
+                android:textAllCaps="true"
+                android:letterSpacing="0.05" />
+        </LinearLayout>
+
+        <!-- Logs Tab -->
+        <LinearLayout
+            android:id="@+id/nav_logs"
+            style="@style/Widget.DRLite.BottomNavItem"
+            android:orientation="vertical"
+            android:background="@drawable/bg_nav_item">
+
+            <ImageView
+                android:id="@+id/nav_logs_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_menu_recent_history"
+                app:tint="?attr/colorOnSurfaceVariant"
+                android:contentDescription="@string/nav_logs" />
+
+            <TextView
+                android:id="@+id/nav_logs_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/nav_logs"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="9sp"
+                android:fontFamily="monospace"
+                android:textAllCaps="true"
+                android:letterSpacing="0.05" />
+        </LinearLayout>
+
+        <!-- About Tab -->
+        <LinearLayout
+            android:id="@+id/nav_about"
+            style="@style/Widget.DRLite.BottomNavItem"
+            android:orientation="vertical"
+            android:background="@drawable/bg_nav_item">
+
+            <ImageView
+                android:id="@+id/nav_about_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_menu_info_details"
+                app:tint="?attr/colorOnSurfaceVariant"
+                android:contentDescription="@string/nav_about" />
+
+            <TextView
+                android:id="@+id/nav_about_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/nav_about"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="9sp"
+                android:fontFamily="monospace"
+                android:textAllCaps="true"
+                android:letterSpacing="0.05" />
+        </LinearLayout>
+
+    </LinearLayout>
 
 </LinearLayout>
