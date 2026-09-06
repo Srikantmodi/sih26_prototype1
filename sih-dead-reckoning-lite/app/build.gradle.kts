@@ -12,7 +12,11 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0-prototype"
+        versionName = "2.0-ml"
+    }
+
+    aaptOptions {
+        noCompress("tflite")
     }
 
     buildTypes {
@@ -61,6 +65,10 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    // TFLite for ML speed estimation
+    implementation("org.tensorflow:tensorflow-lite:2.15.0")
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
 
     // Unit Testing
     testImplementation("junit:junit:4.13.2")

@@ -3,200 +3,195 @@ package com.sih.deadreckoninglite.deadreckoning
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.util.Log
 import com.sih.deadreckoninglite.location.GpsSample
+import com.sih.deadreckoninglite.ml.MlSpeedEstimator
 import com.sih.deadreckoninglite.util.Constants
 
 /**
- * Simulated-tunnel mode controller (PRD §4.2 item 5).
+ * Simulated-tunnel mode controller — ML-upgraded version.
  *
- * Manages the "Simulate Tunnel" toggle state and, while active, drives
- * periodic constant-velocity projections via [ConstantVelocityReckoner].
+ * ## What changed vs. prototype
+ * Speed source priority:
+ *   1. MlSpeedEstimator (primary) — when mlEstimator.isReady() == true
+ *   2. ConstantVelocityReckoner (fallback) — during ML warm-up (~2 s after activation)
  *
- * ## Role in the Architecture
- * This is the decision-point for "which position source is currently
- * authoritative." It does NOT directly call MapController, MainViewModel,
- * or any UI component — it exposes projected positions through a callback
- * that [MainActivity] (the composition root) sets and routes onward.
+ * Heading is always from last real GPS fix (bearingDeg). Gyro-based heading is future work.
  *
- * ## Data Flow
- * ```
- * GpsProvider → MainActivity → onRealGpsSample() → stores lastRealFix
- *                                                    (always, even while active)
+ * Position integration changed: instead of projecting from time-zero (which assumed
+ * constant speed from the last GPS fix), we now integrate step-by-step:
+ *   new_pos = prev_pos + speed x delta_t_in_direction_of_bearing
+ * This allows ML speed to vary naturally over time.
  *
- * setActive(true) → starts internal ~1 Hz ticker
- *   ticker fires → reckoner.project(lastRealFix, elapsedSeconds)
- *                 → onProjectedPosition callback → MainActivity → MapController
+ * ## Architecture Rule (unchanged)
+ * TunnelSimulator has NO knowledge of MapController, MainViewModel, or any UI component.
+ * All output goes through the onProjectedPosition callback -> MainActivity routes it.
  *
- * setActive(false) → stops ticker, clears elapsed-time anchor
- * ```
- *
- * ## What This Is NOT
- * Not automatic GNSS-quality detection — the toggle is a manual UI switch.
- * Not sensor fusion — the reckoner ignores accelerometer/gyroscope data.
- * Not a Kalman filter — it's a simple boolean mode switch with instant snap.
+ * ## Dependency Injection
+ * mlEstimator is SET by MainActivity before setActive(true) is called.
+ * TunnelSimulator never creates or destroys MlSpeedEstimator.
  */
 class TunnelSimulator {
 
-    // ---- Internal components ----
+    companion object {
+        private const val TAG = "TunnelSimulator"
+    }
 
-    /** The pure-math position projector (PRD §9.1). */
-    private val reckoner = ConstantVelocityReckoner()
+    private val reckoner = ConstantVelocityReckoner()   // kept as CV fallback
+    private val handler  = Handler(Looper.getMainLooper())
 
-    /** Main-thread handler for the ~1 Hz projection ticker. */
-    private val handler = Handler(Looper.getMainLooper())
+    // ── State ──────────────────────────────────────────────────────────────
 
-    // ---- State ----
-
-    /**
-     * Whether tunnel simulation mode is currently active.
-     * When true, MainActivity should NOT route real GPS fixes to the map —
-     * instead, projected positions from [onProjectedPosition] are authoritative.
-     */
     var isActive: Boolean = false
         private set
 
-    /**
-     * The most recent real GPS fix received via [onRealGpsSample].
-     * Updated continuously regardless of [isActive] state, so the reckoner
-     * always has the freshest possible origin if the toggle is flipped.
-     */
     private var lastRealFix: GpsSample? = null
+    private var tickerRunning: Boolean  = false
+
+    // ML mode: running integrated position and dynamic heading
+    private var reckonedLat: Double  = 0.0
+    private var reckonedLon: Double  = 0.0
+    private var reckonedHeadingDeg: Double = 0.0
+    private var lastTickTimeMs: Long = 0L
+
+    // Gyroscope tracking for curved tunnels (Gap 1 recovery)
+    @Volatile private var currentYawRateRads: Float = 0f
+    var gyroBiasZ: Float = 0f
+
+    // ── External dependencies (set by MainActivity before setActive) ────────
 
     /**
-     * Monotonic timestamp (via [SystemClock.elapsedRealtime]) when the
-     * current tunnel simulation was activated. Used to compute elapsed
-     * seconds for [ConstantVelocityReckoner.project].
-     *
-     * Reset on each [setActive]`(true)` so re-toggling starts a fresh
-     * elapsed-time interval.
+     * ML speed estimator. Set by MainActivity (composition root).
+     * If null, falls back to constant-velocity reckoning only.
      */
-    private var tunnelStartTimeMs: Long = 0L
+    var mlEstimator: MlSpeedEstimator? = null
 
     /**
-     * Guard flag to prevent duplicate tickers from accumulating if
-     * [setActive]`(true)` is called multiple times without an intervening
-     * [setActive]`(false)`.
-     */
-    private var tickerRunning: Boolean = false
-
-    // ---- Output callback ----
-
-    /**
-     * Callback invoked on each ticker fire with the projected (lat, lon).
-     *
-     * **Set by MainActivity** (the composition root) before the first
-     * [setActive] call. MainActivity routes this output to MapController
-     * and MainViewModel as needed.
-     *
-     * This indirection ensures TunnelSimulator has zero knowledge of
-     * MapController, MainViewModel, or any UI component.
+     * Output callback — invoked each tick with projected (lat, lon).
+     * Set by MainActivity; routes to MapController.addToReckonedPath() and MainViewModel.
      */
     var onProjectedPosition: ((lat: Double, lon: Double) -> Unit)? = null
 
-    // ---- Public API (frozen signatures from PRD §9) ----
+    // ── Public API ──────────────────────────────────────────────────────────
 
-    /**
-     * Feed a real GPS sample into the simulator.
-     *
-     * Must be called by MainActivity for every GPS fix, regardless of
-     * whether tunnel mode is active. While active, the fix is stored
-     * (so the reckoner's origin stays current if re-toggled) but does
-     * NOT affect the displayed position — the projected position is
-     * authoritative.
-     */
+    /** Feed a real GPS sample. Always called by MainActivity, regardless of isActive. */
     fun onRealGpsSample(sample: GpsSample) {
         lastRealFix = sample
     }
 
+    /** Feed live gyroscope Z-axis reading (~50 Hz) for heading integration. */
+    fun onGyroSample(gzRads: Float) {
+        currentYawRateRads = gzRads
+    }
+
     /**
-     * Activate or deactivate simulated-tunnel mode.
-     *
-     * **setActive(true):**
-     * - Records the current time as the tunnel start anchor.
-     * - Starts a ~1 Hz ticker that calls [ConstantVelocityReckoner.project]
-     *   using [lastRealFix] and the growing elapsed time, then invokes
-     *   [onProjectedPosition] with the result.
-     * - If no real GPS fix has been received yet, the ticker will fire but
-     *   skip projection (no-op) until a fix arrives.
-     * - If already active, this is a no-op (no duplicate tickers).
-     *
-     * **setActive(false):**
-     * - Stops the ticker immediately.
-     * - Clears the elapsed-time anchor so the next activation starts fresh.
-     * - Safe to call multiple times or while already inactive.
+     * Activate or deactivate dead-reckoning mode.
+     * setActive(true): starts 10-Hz ticker, resets ML window, anchors reckoned position and heading.
+     * setActive(false): stops ticker immediately.
      */
     fun setActive(active: Boolean) {
         if (active) {
-            if (isActive && tickerRunning) {
-                // Already active with a running ticker — no-op to prevent duplicates
-                return
-            }
+            if (isActive && tickerRunning) return
             isActive = true
-            tunnelStartTimeMs = SystemClock.elapsedRealtime()
+            lastTickTimeMs = SystemClock.elapsedRealtime()
+
+            // Anchor reckoned position and heading to last real GPS fix
+            lastRealFix?.let {
+                reckonedLat = it.latDeg
+                reckonedLon = it.lonDeg
+                reckonedHeadingDeg = it.bearingDeg.toDouble()
+            }
+
+            mlEstimator?.reset()
             startTicker()
+            Log.i(TAG, "Activated DR mode — Initial heading: $reckonedHeadingDeg deg, ML ready=${mlEstimator?.isReady()}")
         } else {
             isActive = false
             stopTicker()
+            Log.i(TAG, "Deactivated DR mode")
         }
     }
 
-    // ---- Internal ticker ----
+    // ── Internal ticker ─────────────────────────────────────────────────────
 
-    /**
-     * The ticker Runnable. On each fire (~1 Hz):
-     * 1. Checks that the simulator is still active.
-     * 2. Checks that a last real GPS fix exists.
-     * 3. Computes elapsed seconds since tunnel activation.
-     * 4. Calls reckoner.project(lastRealFix, elapsedSeconds).
-     * 5. Invokes onProjectedPosition with the result.
-     * 6. Reschedules itself for the next tick.
-     */
     private val tickRunnable = object : Runnable {
         override fun run() {
-            // 1. Bail if deactivated between scheduling and execution
-            if (!isActive) {
-                tickerRunning = false
-                return
-            }
+            if (!isActive) { tickerRunning = false; return }
 
-            // 2. Project only if we have a real fix to project from
             val fix = lastRealFix
             if (fix != null) {
-                // 3. Growing elapsed time from tunnel activation (not from previous tick)
-                val elapsedMs = SystemClock.elapsedRealtime() - tunnelStartTimeMs
-                val elapsedSeconds = elapsedMs / 1000.0
+                val nowMs     = SystemClock.elapsedRealtime()
+                val dtSeconds = (nowMs - lastTickTimeMs) / 1000.0
+                lastTickTimeMs = nowMs
 
-                // 4. Constant-velocity projection
-                val (projLat, projLon) = reckoner.project(fix, elapsedSeconds)
+                // ── Dynamic Heading Update (Gyroscope Yaw Integration) ─────
+                val unbiasedYawRate = (currentYawRateRads - gyroBiasZ).toDouble()
+                // Deadband on minute sensor noise below 0.005 rad/s (~0.28 deg/s)
+                if (Math.abs(unbiasedYawRate) > 0.005 && dtSeconds > 0) {
+                    val deltaHeadingDeg = Math.toDegrees(unbiasedYawRate * dtSeconds)
+                    reckonedHeadingDeg = (reckonedHeadingDeg + deltaHeadingDeg + 360.0) % 360.0
+                }
 
-                // 5. Deliver to MainActivity via callback
-                onProjectedPosition?.invoke(projLat, projLon)
+                // ── Select speed source ──────────────────────────────────
+                val ml = mlEstimator
+                val speedMps: Double = if (ml != null && ml.isReady()) {
+                    val s = ml.predictSpeedMps()?.toDouble() ?: fix.speedMps.toDouble()
+                    s
+                } else {
+                    fix.speedMps.toDouble()
+                }
+
+                // ── Integrate one step with dynamic heading ──────────────
+                val (newLat, newLon) = stepReckoning(
+                    lat        = reckonedLat,
+                    lon        = reckonedLon,
+                    speedMps   = speedMps,
+                    bearingDeg = reckonedHeadingDeg,
+                    dtSeconds  = dtSeconds
+                )
+                reckonedLat = newLat
+                reckonedLon = newLon
+
+                onProjectedPosition?.invoke(reckonedLat, reckonedLon)
             }
 
-            // 6. Schedule next tick (only if still active)
-            if (isActive) {
-                handler.postDelayed(this, Constants.TUNNEL_SIM_TICK_MS)
-            } else {
-                tickerRunning = false
-            }
+            if (isActive) handler.postDelayed(this, Constants.TUNNEL_SIM_TICK_MS)
+            else tickerRunning = false
         }
     }
 
     /**
-     * Starts the ~1 Hz ticker. Safe to call multiple times —
-     * will not create duplicate callbacks.
+     * Single equirectangular dead-reckoning step.
+     * Stationary deadband: speedMps < 0.35 m/s is treated as zero (no position change).
      */
+    private fun stepReckoning(
+        lat: Double, lon: Double,
+        speedMps: Double, bearingDeg: Double,
+        dtSeconds: Double
+    ): Pair<Double, Double> {
+        val effectiveSpeed = if (speedMps < 0.35) 0.0 else speedMps
+        if (effectiveSpeed == 0.0 || dtSeconds <= 0.0) return Pair(lat, lon)
+
+        val distM      = effectiveSpeed * dtSeconds
+        val bearingRad = Math.toRadians(bearingDeg)
+        val latRad     = Math.toRadians(lat)
+        val R          = Constants.EARTH_RADIUS_M
+
+        val deltaLat = (distM * Math.cos(bearingRad)) / R
+        val deltaLon = (distM * Math.sin(bearingRad)) / (R * Math.cos(latRad))
+
+        return Pair(
+            lat + Math.toDegrees(deltaLat),
+            lon + Math.toDegrees(deltaLon)
+        )
+    }
+
     private fun startTicker() {
         if (tickerRunning) return
         tickerRunning = true
-        // Fire the first tick immediately so the position updates right away
         handler.post(tickRunnable)
     }
 
-    /**
-     * Stops the ticker and removes any pending callbacks.
-     * Safe to call multiple times or while already stopped.
-     */
     private fun stopTicker() {
         tickerRunning = false
         handler.removeCallbacks(tickRunnable)

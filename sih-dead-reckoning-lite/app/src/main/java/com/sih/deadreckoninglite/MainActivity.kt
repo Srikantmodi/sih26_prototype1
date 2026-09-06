@@ -22,7 +22,10 @@ import com.sih.deadreckoninglite.location.GpsProvider
 import com.sih.deadreckoninglite.location.GpsSample
 import com.sih.deadreckoninglite.logging.SensorLogger
 import com.sih.deadreckoninglite.map.MapController
+import com.sih.deadreckoninglite.map.MapMatchingEngine
+import com.sih.deadreckoninglite.ml.MlSpeedEstimator
 import com.sih.deadreckoninglite.sensors.ImuManager
+import com.sih.deadreckoninglite.sensors.OrientationCalibrator
 import com.sih.deadreckoninglite.sensors.SensorSample
 import com.sih.deadreckoninglite.ui.DriveLogActivity
 import com.sih.deadreckoninglite.ui.MainViewModel
@@ -79,8 +82,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var gpsProvider: GpsProvider
     private lateinit var sensorLogger: SensorLogger
     private lateinit var tunnelSimulator: TunnelSimulator
+    private lateinit var mlEstimator: MlSpeedEstimator
     private lateinit var mapController: MapController
     private lateinit var viewModel: MainViewModel
+    private lateinit var orientationCalibrator: OrientationCalibrator
+    private lateinit var mapMatchingEngine: MapMatchingEngine
 
     // ---- Helpers ----
     /** Main-thread handler for posting UI updates from sensor thread. */
@@ -137,7 +143,11 @@ class MainActivity : AppCompatActivity() {
         gpsProvider = GpsProvider(this)
         sensorLogger = SensorLogger(this)
         tunnelSimulator = TunnelSimulator()
+        mlEstimator = MlSpeedEstimator(this)
+        tunnelSimulator.mlEstimator = mlEstimator
         mapController = MapController(binding.mapView)
+        orientationCalibrator = OrientationCalibrator()
+        mapMatchingEngine = MapMatchingEngine()
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
         // ---- Initialize map ----
@@ -174,6 +184,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         Log.i(TAG, "onDestroy — stopping all modules")
         stopAllSensors()
+        if (::mlEstimator.isInitialized) mlEstimator.close()
         super.onDestroy()
     }
 
@@ -231,9 +242,36 @@ class MainActivity : AppCompatActivity() {
             // Route 1: Log to CSV (thread-safe, called from sensor thread)
             sensorLogger.logImu(sample)
 
-            // Route 2: Push to ViewModel for UI display (must be on main thread)
+            // Auto-calibration: process sample for mounting orientation & gyro bias
+            orientationCalibrator.addSample(sample)
+            if (orientationCalibrator.isCalibrated) {
+                tunnelSimulator.gyroBiasZ = orientationCalibrator.gyroBiasZ
+            }
+
+            // Route 2: Push to ViewModel & ML estimator (must be on main thread)
             mainHandler.post {
                 viewModel.publishSample(sample)
+
+                // Coordinate alignment (Gap 2): Transform raw phone linear accel to vehicle forward/lateral/vertical
+                val (fwdAccel, latAccel, vertAccel) = orientationCalibrator.transformToVehicleFrame(
+                    sample.linearAx, sample.linearAy, sample.linearAz
+                )
+
+                // Feed gyro yaw rate for dynamic curve tracking (Gap 1)
+                tunnelSimulator.onGyroSample(sample.gz)
+
+                // Feed ML estimator with vehicle-aligned motion acceleration
+                mlEstimator.addSample(
+                    linearAx = latAccel,
+                    linearAy = fwdAccel,
+                    linearAz = vertAccel,
+                    gx       = sample.gx,
+                    gy       = sample.gy,
+                    gz       = sample.gz
+                )
+                // Update ViewModel with ML state for UI/telemetry display
+                viewModel.setMlSpeedMps(mlEstimator.predictSpeedMps())
+                viewModel.setMlReady(mlEstimator.isReady())
             }
         }
         Log.i(TAG, "IMU started")
@@ -304,6 +342,13 @@ class MainActivity : AppCompatActivity() {
         // Route 2: Always feed tunnel simulator (stores latest fix)
         tunnelSimulator.onRealGpsSample(sample)
 
+        // Dynamically build road corridor segments from preceding GPS fixes for map matching
+        lastRealGpsFix?.let { prevFix ->
+            if (prevFix.distanceTo(sample.latDeg, sample.lonDeg) > 2.0) {
+                mapMatchingEngine.addCorridorSegment(prevFix.latDeg, prevFix.lonDeg, sample.latDeg, sample.lonDeg)
+            }
+        }
+
         // Route 3: Update map (only if NOT in tunnel/DR mode)
         if (!tunnelSimulator.isActive) {
             mapController.moveVehicleTo(sample.latDeg, sample.lonDeg)
@@ -341,20 +386,23 @@ class MainActivity : AppCompatActivity() {
      * 3. Update lat/lon display
      */
     private fun onTunnelProjection(lat: Double, lon: Double) {
-        // Route 1: Update map with projected position
-        mapController.moveVehicleTo(lat, lon)
-        mapController.addToReckonedPath(lat, lon)
+        // Map Matching (Gap 3): Snap raw dead-reckoned point to nearest corridor centerline
+        val (matchedLat, matchedLon) = mapMatchingEngine.snapToRoad(lat, lon)
+
+        // Route 1: Update map with matched position
+        mapController.moveVehicleTo(matchedLat, matchedLon)
+        mapController.addToReckonedPath(matchedLat, matchedLon)
 
         // Route 2: Calculate and publish drift estimate
         val fix = lastRealGpsFix
         if (fix != null) {
-            val driftMeters = fix.distanceTo(lat, lon).toFloat()
+            val driftMeters = fix.distanceTo(matchedLat, matchedLon).toFloat()
             viewModel.setDriftEstimateM(driftMeters)
         }
 
-        // Route 3: Update lat/lon display with projected coordinates
-        binding.latitudeValue.text = "%.6f".format(lat)
-        binding.longitudeValue.text = "%.6f".format(lon)
+        // Route 3: Update lat/lon display with matched coordinates
+        binding.latitudeValue.text = "%.6f".format(matchedLat)
+        binding.longitudeValue.text = "%.6f".format(matchedLon)
     }
 
     // ================================================================== //
@@ -452,22 +500,22 @@ class MainActivity : AppCompatActivity() {
         viewModel.currentMode.observe(this) { mode ->
             when (mode) {
                 MainViewModel.Mode.GNSS -> {
-                    binding.modeText.text = getString(R.string.mode_gnss)
+                    binding.modeText.text = getString(R.string.mode_gnss) + " (10Hz)"
                     binding.modeText.setTextColor(
                         ContextCompat.getColor(this, R.color.gnss_green)
                     )
                     setDotColor(binding.modeDot, Constants.GNSS_BADGE_COLOR)
                     setDotColor(binding.headerDrDot, Constants.GNSS_BADGE_COLOR)
-                    binding.headerDrText.text = getString(R.string.mode_gnss)
+                    binding.headerDrText.text = getString(R.string.mode_gnss) + " (10Hz)"
                 }
                 MainViewModel.Mode.DEAD_RECKONING -> {
-                    binding.modeText.text = getString(R.string.mode_dead_reckoning)
+                    binding.modeText.text = getString(R.string.mode_dead_reckoning) + " (10Hz ML)"
                     binding.modeText.setTextColor(
                         ContextCompat.getColor(this, R.color.dead_reckoning_amber)
                     )
                     setDotColor(binding.modeDot, Constants.DR_BADGE_COLOR)
                     setDotColor(binding.headerDrDot, Constants.DR_BADGE_COLOR)
-                    binding.headerDrText.text = getString(R.string.dr_active)
+                    binding.headerDrText.text = getString(R.string.dr_active) + " (10Hz)"
                 }
                 null -> { /* no-op */ }
             }
@@ -492,6 +540,14 @@ class MainActivity : AppCompatActivity() {
                 binding.longitudeValue.text = "%.6f".format(gps.lonDeg)
 
                 val speedKmh = if (gps.speedMps < 0.35f) 0.0f else gps.speedMps * 3.6f
+                binding.speedValue.text = "%.1f".format(speedKmh)
+            }
+        }
+
+        // ---- ML Speed (used in DR mode) ----
+        viewModel.mlSpeedMps.observe(this) { mlSpeed ->
+            if (mlSpeed != null && tunnelSimulator.isActive) {
+                val speedKmh = mlSpeed * 3.6f
                 binding.speedValue.text = "%.1f".format(speedKmh)
             }
         }
@@ -534,7 +590,7 @@ class MainActivity : AppCompatActivity() {
         val bg = dotView.background
         if (bg is GradientDrawable) {
             bg.mutate()
-            (bg as GradientDrawable).setColor(color)
+            bg.setColor(color)
         } else {
             dotView.setBackgroundColor(color)
         }
