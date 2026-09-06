@@ -49,8 +49,12 @@ class ConstantVelocityReckoner {
     fun project(lastFix: GpsSample, elapsedSeconds: Double): Pair<Double, Double> {
         val earthRadiusM = Constants.EARTH_RADIUS_M
 
-        // 1. Distance traveled: speed × time
-        val distanceM = lastFix.speedMps * elapsedSeconds
+        // 1. Distance traveled: speed × time (stationary deadband below 0.35 m/s)
+        val effectiveSpeed = if (lastFix.speedMps < 0.35f) 0.0 else lastFix.speedMps.toDouble()
+        if (effectiveSpeed == 0.0 || elapsedSeconds <= 0.0) {
+            return Pair(lastFix.latDeg, lastFix.lonDeg)
+        }
+        val distanceM = effectiveSpeed * elapsedSeconds
 
         // 2. Convert heading from degrees to radians
         val bearingRad = Math.toRadians(lastFix.bearingDeg.toDouble())

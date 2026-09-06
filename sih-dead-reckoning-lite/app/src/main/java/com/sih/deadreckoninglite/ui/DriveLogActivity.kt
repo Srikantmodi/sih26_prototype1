@@ -201,7 +201,11 @@ class DriveLogActivity : AppCompatActivity() {
 
         // About tab
         findViewById<View>(R.id.nav_about)?.setOnClickListener {
-            Toast.makeText(this@DriveLogActivity, "About — coming soon", Toast.LENGTH_SHORT).show()
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.app_name_full)
+                .setMessage("ISRO SIH PS 26168 Prototype\nVersion 1.0-prototype\n\nIntelligent Dead Reckoning (DR) with high-frequency IMU logging and constant-velocity fallback for GNSS-denied environments.")
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
         }
     }
 

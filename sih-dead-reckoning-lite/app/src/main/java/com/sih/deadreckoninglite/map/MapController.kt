@@ -1,19 +1,22 @@
 package com.sih.deadreckoninglite.map
 
 import android.graphics.Color
+import androidx.core.content.ContextCompat
+import com.sih.deadreckoninglite.R
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
+import java.io.File
 
 /**
  * Owns the osmdroid [MapView] — the only file in the codebase that touches
  * osmdroid APIs directly.
  *
  * ## Responsibilities
- * - Configure the map (tile source, zoom, multi-touch)
- * - Move the vehicle marker to a given (lat, lon)
+ * - Configure the map (tile source, zoom, multi-touch, User-Agent, cache)
+ * - Move the vehicle marker to a given (lat, lon) smoothly
  * - Draw two separate colored [Polyline] overlays:
  *   - **Real path** (green) — positions sourced from live GPS
  *   - **Reckoned path** (amber/orange) — positions projected by dead reckoning
@@ -32,6 +35,10 @@ class MapController(private val mapView: MapView) {
     private val realPath = Polyline(mapView)
     private val reckonedPath = Polyline(mapView)
     private var initialized = false
+    private var hasFirstPosition = false
+
+    /** Whether the map camera should automatically stay centered on vehicle updates. */
+    var autoFollow: Boolean = true
 
     /**
      * Initialize the map: set tile source, enable multi-touch, add overlays.
@@ -40,7 +47,14 @@ class MapController(private val mapView: MapView) {
     fun init() {
         if (initialized) return
 
-        Configuration.getInstance().userAgentValue = mapView.context.packageName
+        val ctx = mapView.context
+        val config = Configuration.getInstance()
+        // OpenStreetMap requires a descriptive custom User-Agent to prevent 403 throttling
+        config.userAgentValue = "DeadReckoningLite/1.0 (com.sih.deadreckoninglite; SIH-PS-26168)"
+        config.osmdroidBasePath = ctx.cacheDir
+        config.osmdroidTileCache = File(ctx.cacheDir, "osm_tiles")
+
+        mapView.isTilesScaledToDpi = true
         mapView.setMultiTouchControls(true)
         mapView.setBuiltInZoomControls(false)
         mapView.setTileSource(org.osmdroid.tileprovider.tilesource.TileSourceFactory.MAPNIK)
@@ -53,7 +67,12 @@ class MapController(private val mapView: MapView) {
         reckonedPath.outlinePaint.color = Color.rgb(232, 137, 22)
         reckonedPath.outlinePaint.strokeWidth = 8f
 
-        vehicleMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+        // Custom high-contrast vehicle marker puck
+        val customIcon = ContextCompat.getDrawable(ctx, R.drawable.ic_vehicle_marker)
+        if (customIcon != null) {
+            vehicleMarker.icon = customIcon
+        }
+        vehicleMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
         vehicleMarker.title = "Vehicle position"
 
         mapView.overlays.add(realPath)
@@ -67,15 +86,22 @@ class MapController(private val mapView: MapView) {
     }
 
     /**
-     * Move the vehicle marker to the given coordinates and center the map.
-     * Called by [MainActivity] regardless of whether the position is from
-     * real GPS or the dead reckoner.
+     * Move the vehicle marker to the given coordinates.
+     * Updates marker position directly and smoothly updates center without
+     * disruptive 1-second animations that freeze touch interaction.
      */
     fun moveVehicleTo(lat: Double, lon: Double) {
         ensureInitialized()
         val point = GeoPoint(lat, lon)
         vehicleMarker.position = point
-        mapView.controller.animateTo(point)
+
+        if (!hasFirstPosition) {
+            mapView.controller.setCenter(point)
+            hasFirstPosition = true
+        } else if (autoFollow) {
+            mapView.controller.setCenter(point)
+        }
+
         mapView.invalidate()
     }
 
@@ -111,7 +137,6 @@ class MapController(private val mapView: MapView) {
 
     /**
      * Set the map zoom level programmatically.
-     * Used by the zoom in/out buttons in the dashboard HUD.
      */
     fun zoomIn() {
         ensureInitialized()
@@ -127,12 +152,14 @@ class MapController(private val mapView: MapView) {
     }
 
     /**
-     * Re-center the map on the vehicle marker's current position.
+     * Re-center the map on the vehicle marker's current position and re-enable autoFollow.
      */
     fun recenter() {
         ensureInitialized()
-        if (vehicleMarker.position != null) {
-            mapView.controller.animateTo(vehicleMarker.position)
+        autoFollow = true
+        val pos = vehicleMarker.position
+        if (pos != null) {
+            mapView.controller.animateTo(pos)
         }
     }
 
@@ -141,7 +168,7 @@ class MapController(private val mapView: MapView) {
     }
 
     companion object {
-        private const val DEFAULT_ZOOM = 16.0
+        private const val DEFAULT_ZOOM = 16.5
         // Default center: India (Bangalore area)
         private val DEFAULT_CENTER = GeoPoint(20.5937, 78.9629)
     }

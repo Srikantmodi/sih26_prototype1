@@ -39,20 +39,24 @@
     </style>
 
     <!-- Splash-specific (always dark for branding) -->
-    <style name="Theme.DRLite.Splash">
+    <style name="Theme.DRLite.Splash" parent="Theme.DRLite">
         <item name="android:statusBarColor">@color/surface_dark</item>
         <item name="android:navigationBarColor">@color/surface_dark</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowBackground">@color/surface_dark</item>
+        <item name="android:windowFullscreen">true</item>
     </style>
 
     <!-- ============================================================ -->
     <!--  Widget Styles                                                -->
     <!-- ============================================================ -->
 
+    <!-- Base Widget Style -->
+    <style name="Widget.DRLite" parent="" />
+
     <!-- Dashboard Card -->
-    <style name="Widget.DRLite.Card">
+    <style name="Widget.DRLite.Card" parent="">
         <item name="android:background">@drawable/bg_card</item>
         <item name="android:padding">12dp</item>
     </style>
@@ -94,7 +98,7 @@
     </style>
 
     <!-- Bottom Nav Item -->
-    <style name="Widget.DRLite.BottomNavItem">
+    <style name="Widget.DRLite.BottomNavItem" parent="">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_weight">1</item>
