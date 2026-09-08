@@ -16,8 +16,8 @@
     <path
         android:fillColor="#0066FF"
         android:pathData="M22,22m-11,0a11,11 0,1 1,22 0a11,11 0,1 1,-22 0" />
-    <!-- Center Directional Vehicle Dart / Pointer -->
+    <!-- Center Navigation Core Dot (Clean circular puck instead of arrow) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M22,14L28,26L22,23L16,26Z" />
+        android:pathData="M22,22m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
 </vector>
