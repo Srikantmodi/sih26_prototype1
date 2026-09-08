@@ -193,6 +193,26 @@ class GpsProvider(context: Context) {
                 Looper.getMainLooper()
             )
             isRunning = true
+
+            // Fetch cached lastLocation immediately so map and DR engine get instant real position
+            try {
+                fusedClient.lastLocation.addOnSuccessListener { loc ->
+                    if (loc != null && isRunning) {
+                        val sample = GpsSample(
+                            timestampNs = loc.elapsedRealtimeNanos,
+                            latDeg      = loc.latitude,
+                            lonDeg      = loc.longitude,
+                            speedMps    = if (loc.hasSpeed()) loc.speed else 0f,
+                            bearingDeg  = if (loc.hasBearing()) loc.bearing else 0f,
+                            accuracyM   = if (loc.hasAccuracy()) loc.accuracy else Float.MAX_VALUE
+                        )
+                        this.onSample?.invoke(sample)
+                    }
+                }
+            } catch (se: SecurityException) {
+                Log.w(TAG, "Cannot fetch initial lastLocation: ${se.message}")
+            }
+
             Log.i(TAG, "Started — requesting ~1 Hz high-accuracy updates")
             true
         } catch (se: SecurityException) {

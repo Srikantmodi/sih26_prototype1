@@ -121,7 +121,7 @@ object Constants {
     const val LOG_FILE_PREFIX: String = "drive_"
 
     // ================================================================== //
-    //  Dead Reckoning / Tunnel Simulation                                 //
+    //  Dead Reckoning / Autonomous GNSS Monitoring                        //
     // ================================================================== //
 
     /**
@@ -132,6 +132,44 @@ object Constants {
      * Used by: Member 1 (TunnelSimulator) internal ticker/handler.
      */
     const val TUNNEL_SIM_TICK_MS: Long = 1_000L
+
+    /**
+     * Timeout in milliseconds without a GPS fix before declaring GNSS outage (4.0s).
+     * Prevents false-alarm flapping on occasional delayed fixes while reliably detecting tunnels.
+     */
+    const val GNSS_OUTAGE_TIMEOUT_MS: Long = 4_000L
+
+    /**
+     * Watchdog evaluation interval for checking GNSS fix health.
+     */
+    const val GNSS_WATCHDOG_INTERVAL_MS: Long = 500L
+
+    /**
+     * Minimum interval between UI text updates in milliseconds (10 Hz = 100ms).
+     * Prevents 50 Hz flickering on screen while preserving 50 Hz background logging.
+     */
+    const val UI_UPDATE_INTERVAL_MS: Long = 100L
+
+    /**
+     * Acceleration variance threshold (m^2/s^4) below which the device is considered stationary.
+     */
+    const val ZUPT_ACCEL_VAR_THRESHOLD: Float = 0.03f
+
+    /**
+     * Gyroscope angular rate magnitude threshold (rad/s) below which the device is considered stationary.
+     */
+    const val ZUPT_GYRO_MAG_THRESHOLD: Float = 0.10f
+
+    /**
+     * Speed deadband in m/s (~1.8 km/h). Speeds below this with no confirmed acceleration clamp to 0.
+     */
+    const val SPEED_DEADBAND_MPS: Float = 0.50f
+
+    /**
+     * Default offline seed coordinate (Hyderabad Dr. A.S. Rao Nagar area).
+     */
+    const val DEFAULT_SEED_LAT: Double = 17.478617
+    const val DEFAULT_SEED_LON: Double = 78.558636
 
     // ================================================================== //
     //  Map / UI Colors (as ARGB int literals)                             //

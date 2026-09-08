@@ -9,6 +9,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import android.view.View
 import android.widget.Toast
@@ -17,53 +18,45 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import com.sih.deadreckoninglite.databinding.ActivityMainBinding
-import com.sih.deadreckoninglite.deadreckoning.TunnelSimulator
+import com.sih.deadreckoninglite.deadreckoning.DeadReckoningEngine
+import com.sih.deadreckoninglite.location.GnssQualityMonitor
 import com.sih.deadreckoninglite.location.GpsProvider
 import com.sih.deadreckoninglite.location.GpsSample
+import com.sih.deadreckoninglite.location.LocationCache
+import com.sih.deadreckoninglite.location.NavigationMode
 import com.sih.deadreckoninglite.logging.SensorLogger
 import com.sih.deadreckoninglite.map.MapController
 import com.sih.deadreckoninglite.sensors.ImuManager
+import com.sih.deadreckoninglite.sensors.SensorFilter
 import com.sih.deadreckoninglite.sensors.SensorSample
+import com.sih.deadreckoninglite.sensors.SpeedFilter
 import com.sih.deadreckoninglite.ui.DriveLogActivity
 import com.sih.deadreckoninglite.ui.MainViewModel
 import com.sih.deadreckoninglite.ui.ThemeManager
 import com.sih.deadreckoninglite.util.Constants
+import android.preference.PreferenceManager
+import org.osmdroid.config.Configuration
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
 /**
- * Composition Root — the central wiring hub for the Dead Reckoning Lite prototype.
+ * Composition Root — central integration hub for the Dead Reckoning Lite system.
  *
  * ## Architecture
- * All domain modules ([ImuManager], [GpsProvider], [SensorLogger], [TunnelSimulator],
- * [MapController], [MainViewModel]) are isolated from each other. They do not hold
- * references to one another. **This Activity is the ONLY place** where data flows
- * between them — it receives callbacks from producers, routes data to consumers,
- * and pushes state changes into [MainViewModel] for the UI layer to observe.
+ * All domain modules ([ImuManager], [GpsProvider], [SensorLogger], [GnssQualityMonitor],
+ * [DeadReckoningEngine], [SensorFilter], [SpeedFilter], [LocationCache], [MapController],
+ * [MainViewModel]) are completely decoupled.
  *
- * ## Data Flow Summary
- * ```
- * ImuManager ──callback──► MainActivity ──► SensorLogger.logImu()
- *                                      ──► MainViewModel.publishSample()
- *
- * GpsProvider ──callback──► MainActivity ──► SensorLogger.logGps()
- *                                       ──► MapController.moveVehicleTo() + addToRealPath()
- *                                       ──► MainViewModel.publishGps()
- *                                       ──► TunnelSimulator.onRealGpsSample()
- *
- * TunnelSimulator ──onProjectedPosition──► MainActivity ──► MapController.moveVehicleTo() + addToReckonedPath()
- *                                                      ──► MainViewModel.setDriftEstimateM()
- *
- * MainViewModel (LiveData) ──observe──► UI TextViews (mode, speed, lat, lon, accel, gyro, drift)
- * ```
- *
- * ## Threading
- * - IMU callback: sensor-delivery thread → post to main thread for UI updates
- * - GPS callback: main looper (configured in GpsProvider)
- * - TunnelSimulator ticker: main looper (configured in TunnelSimulator)
- * - SensorLogger: thread-safe, accepts calls from any thread
+ * This Activity coordinates data flow:
+ * - High-frequency 50 Hz IMU data -> filtered via [SensorFilter] & logged to CSV
+ * - UI sensor updates throttled to 10 Hz (no flickering/glitches)
+ * - Zero-velocity update (ZUPT) clamping speed & rotation when stationary
+ * - Automatic GNSS outage detection via [GnssQualityMonitor]
+ * - Instant offline startup via [LocationCache]
+ * - Bias-corrected, non-circular path dead reckoning via [DeadReckoningEngine]
  */
 class MainActivity : AppCompatActivity() {
 
@@ -74,26 +67,33 @@ class MainActivity : AppCompatActivity() {
     // ---- View Binding ----
     private lateinit var binding: ActivityMainBinding
 
-    // ---- Domain Modules (created in onCreate) ----
+    // ---- Domain Modules ----
     private lateinit var imuManager: ImuManager
     private lateinit var gpsProvider: GpsProvider
     private lateinit var sensorLogger: SensorLogger
-    private lateinit var tunnelSimulator: TunnelSimulator
+    private lateinit var gnssQualityMonitor: GnssQualityMonitor
+    private lateinit var deadReckoningEngine: DeadReckoningEngine
+    private lateinit var sensorFilter: SensorFilter
+    private lateinit var speedFilter: SpeedFilter
+    private lateinit var locationCache: LocationCache
     private lateinit var mapController: MapController
     private lateinit var viewModel: MainViewModel
 
-    // ---- Helpers ----
-    /** Main-thread handler for posting UI updates from sensor thread. */
+    // ---- Helpers & Throttling ----
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    /** UTC time formatter for the position card. */
     private val utcFormat = SimpleDateFormat("HH:mm:ss 'UTC'", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
 
-    /** Tracks the last real GPS fix for drift calculation when exiting tunnel mode. */
     @Volatile
     private var lastRealGpsFix: GpsSample? = null
+
+    @Volatile
+    private var lastUiUpdateMs: Long = 0L
+
+    @Volatile
+    private var lastImuTimestampNs: Long = 0L
 
     // ---- Permission Launcher ----
     private val locationPermissionLauncher = registerForActivityResult(
@@ -103,18 +103,18 @@ class MainActivity : AppCompatActivity() {
         val coarseGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
 
         if (fineGranted || coarseGranted) {
-            Log.i(TAG, "Location permission granted — starting sensors")
+            Log.i(TAG, "Location permission granted — starting all sensors")
             startAllSensors()
         } else {
-            Log.w(TAG, "Location permission denied — GPS will not be available")
+            Log.w(TAG, "Location permission denied — operating in standalone offline DR mode")
             Toast.makeText(
                 this,
-                "Location permission is required for GPS tracking",
+                "Location unavailable — operating in offline Dead Reckoning mode",
                 Toast.LENGTH_LONG
             ).show()
-            // Start IMU-only (GPS won't start)
             startImu()
             startCsvLogging()
+            onNavigationModeChanged(NavigationMode.OFFLINE_STANDALONE)
         }
     }
 
@@ -123,9 +123,21 @@ class MainActivity : AppCompatActivity() {
     // ================================================================== //
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Apply theme BEFORE super.onCreate() (ThemeManager requirement)
         ThemeManager.applyTheme(this)
         super.onCreate(savedInstanceState)
+
+        // ---- Configure osmdroid and ensure offline tiles are available before MapView inflates ----
+        val basePath = File(filesDir, "osmdroid")
+        basePath.mkdirs()
+        val osmConfig = Configuration.getInstance()
+        osmConfig.load(this, PreferenceManager.getDefaultSharedPreferences(this))
+        osmConfig.osmdroidBasePath = basePath
+        osmConfig.osmdroidTileCache = File(basePath, "tiles")
+        osmConfig.userAgentValue = "DeadReckoningLite/1.0 (com.sih.deadreckoninglite; SIH-PS-26168)"
+        osmConfig.cacheMapTileCount = 1200
+        osmConfig.cacheMapTileOvershoot = 500
+        osmConfig.expirationExtendedDuration = 1000L * 60 * 60 * 24 * 60L
+        MapController.copyOfflineAssetsIfNeeded(this)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -136,20 +148,26 @@ class MainActivity : AppCompatActivity() {
         imuManager = ImuManager(this)
         gpsProvider = GpsProvider(this)
         sensorLogger = SensorLogger(this)
-        tunnelSimulator = TunnelSimulator()
+        deadReckoningEngine = DeadReckoningEngine()
+        sensorFilter = SensorFilter()
+        speedFilter = SpeedFilter()
+        locationCache = LocationCache(this)
         mapController = MapController(binding.mapView)
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
-        // ---- Initialize map ----
-        mapController.init()
-
-        // ---- Wire TunnelSimulator output callback ----
-        tunnelSimulator.onProjectedPosition = { lat, lon ->
-            onTunnelProjection(lat, lon)
+        gnssQualityMonitor = GnssQualityMonitor(this) { mode ->
+            onNavigationModeChanged(mode)
         }
 
+        // ---- Initialize map and seed position immediately from offline cache ----
+        mapController.init()
+        val (seedLat, seedLon, seedBearing) = locationCache.getLastKnownPosition()
+        mapController.seedInitialPosition(seedLat, seedLon)
+        binding.latitudeValue.text = "%.7f".format(seedLat)
+        binding.longitudeValue.text = "%.7f".format(seedLon)
+        deadReckoningEngine.setOrigin(seedLat, seedLon, seedBearing, 0f)
+
         // ---- Set up UI interactions ----
-        setupTunnelSwitch()
         setupMapButtons()
         setupThemeToggle()
         setupBottomNav()
@@ -164,6 +182,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         binding.mapView.onResume()
+        mapController.updateDataConnectionMode()
     }
 
     override fun onPause() {
@@ -209,42 +228,81 @@ class MainActivity : AppCompatActivity() {
     //  Sensor Start / Stop                                                //
     // ================================================================== //
 
-    /**
-     * Start all sensor streams: IMU, GPS, and CSV logging.
-     * Called after location permission is confirmed granted.
-     */
     private fun startAllSensors() {
         startImu()
         startGps()
         startCsvLogging()
+        gnssQualityMonitor.start()
     }
 
     /**
-     * Start IMU sensor with the routing callback.
-     *
-     * The callback fires on the sensor-delivery thread, so we:
-     * 1. Feed SensorLogger immediately (it's thread-safe)
-     * 2. Post ViewModel update to main thread
+     * Start IMU sampling:
+     * 1. 50 Hz raw sample logged to CSV.
+     * 2. Sample filtered via [SensorFilter] (EMA low-pass, stationary ZUPT, gyro bias).
+     * 3. If in Dead Reckoning mode, project position forward and update map.
+     * 4. UI text updates throttled to 10 Hz (100ms) to prevent screen flickering.
      */
     private fun startImu() {
         imuManager.start { sample: SensorSample ->
-            // Route 1: Log to CSV (thread-safe, called from sensor thread)
+            // Route 1: Log raw unadulterated 50 Hz sample for CSV export
             sensorLogger.logImu(sample)
 
-            // Route 2: Push to ViewModel for UI display (must be on main thread)
-            mainHandler.post {
-                viewModel.publishSample(sample)
+            // Route 2: Process through SensorFilter (EMA + ZUPT stationary detection)
+            val filtered = sensorFilter.filter(sample)
+
+            // Route 3: If in Dead Reckoning or Offline mode, project position step
+            val mode = gnssQualityMonitor.currentMode
+            if (mode == NavigationMode.DEAD_RECKONING_AUTO || mode == NavigationMode.OFFLINE_STANDALONE) {
+                val dtSec = if (lastImuTimestampNs > 0L) {
+                    (sample.timestampNs - lastImuTimestampNs) / 1_000_000_000.0
+                } else {
+                    0.02
+                }
+                lastImuTimestampNs = sample.timestampNs
+
+                val speedMps = speedFilter.stepDrSpeed(dtSec, filtered.isStationary)
+                deadReckoningEngine.updateSpeed(speedMps)
+                val (drLat, drLon) = deadReckoningEngine.step(filtered, dtSec)
+
+                mainHandler.post {
+                    mapController.moveVehicleTo(drLat, drLon)
+                    // Only draw reckoned path if the vehicle is confirmed in motion (speed > 1.5 km/h)
+                    if (!filtered.isStationary && speedFilter.speedKmh > 1.5f) {
+                        mapController.addToReckonedPath(drLat, drLon)
+                    }
+                    binding.latitudeValue.text = "%.7f".format(drLat)
+                    binding.longitudeValue.text = "%.7f".format(drLon)
+                    viewModel.setDriftEstimateM(deadReckoningEngine.estimatedDriftM)
+                    binding.speedValue.text = "%.1f".format(speedFilter.speedKmh)
+                }
+            }
+
+            // Route 4: Throttle UI text display to 10 Hz (~100ms)
+            val nowMs = SystemClock.uptimeMillis()
+            if (nowMs - lastUiUpdateMs >= Constants.UI_UPDATE_INTERVAL_MS) {
+                lastUiUpdateMs = nowMs
+                mainHandler.post {
+                    viewModel.publishSample(
+                        SensorSample(
+                            timestampNs = filtered.timestampNs,
+                            ax = filtered.ax,
+                            ay = filtered.ay,
+                            az = filtered.az,
+                            gx = filtered.gx,
+                            gy = filtered.gy,
+                            gz = filtered.gz
+                        )
+                    )
+
+                    if (mode == NavigationMode.GNSS_LOCK || mode == NavigationMode.GNSS_DEGRADED) {
+                        binding.speedValue.text = "%.1f".format(speedFilter.speedKmh)
+                    }
+                }
             }
         }
-        Log.i(TAG, "IMU started")
+        Log.i(TAG, "IMU started with 10 Hz UI throttling and ZUPT filter")
     }
 
-    /**
-     * Start GPS with the routing callback.
-     *
-     * GPS callback fires on the main looper (configured in GpsProvider),
-     * so all downstream calls here are already on the main thread.
-     */
     @SuppressLint("MissingPermission")
     private fun startGps() {
         val success = gpsProvider.start { sample: GpsSample ->
@@ -252,29 +310,23 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (!success) {
-            Log.e(TAG, "GpsProvider.start() returned false — GPS is unavailable")
-            Toast.makeText(this, "GPS unavailable on this device", Toast.LENGTH_LONG).show()
+            Log.w(TAG, "GpsProvider unavailable — operating in offline mode")
+            onNavigationModeChanged(NavigationMode.OFFLINE_STANDALONE)
         } else {
             Log.i(TAG, "GPS started")
         }
     }
 
-    /**
-     * Start CSV logging session.
-     */
     private fun startCsvLogging() {
         sensorLogger.start()
         viewModel.setCsvLoggingActive(true)
         Log.i(TAG, "CSV logging started")
     }
 
-    /**
-     * Stop all sensor streams cleanly.
-     */
     private fun stopAllSensors() {
         imuManager.stop()
         gpsProvider.stop()
-        tunnelSimulator.setActive(false)
+        gnssQualityMonitor.stop()
         sensorLogger.stop()
         viewModel.setCsvLoggingActive(false)
         Log.i(TAG, "All sensors stopped")
@@ -284,31 +336,44 @@ class MainActivity : AppCompatActivity() {
     //  GPS Fix Routing (Main Thread)                                      //
     // ================================================================== //
 
-    /**
-     * Central GPS fix handler — called by GpsProvider callback on main thread.
-     *
-     * Routes the fix to all consumers:
-     * 1. SensorLogger — log to CSV
-     * 2. TunnelSimulator — always feed real GPS (even while tunnel is active)
-     * 3. MapController — update position on map (only when NOT in tunnel mode)
-     * 4. MainViewModel — update UI state
-     * 5. Update UTC time display
-     */
     private fun onGpsFix(sample: GpsSample) {
-        // Store for drift calculation
         lastRealGpsFix = sample
 
-        // Route 1: CSV logging (thread-safe)
+        // Route 1: CSV logging
         sensorLogger.logGps(sample)
 
-        // Route 2: Always feed tunnel simulator (stores latest fix)
-        tunnelSimulator.onRealGpsSample(sample)
+        // Route 2: Feed autonomous GNSS monitor (resets watchdog, checks health)
+        gnssQualityMonitor.onGpsSampleReceived(sample)
 
-        // Route 3: Update map (only if NOT in tunnel/DR mode)
-        if (!tunnelSimulator.isActive) {
+        // Route 3: Update persistent cache for offline restarts
+        locationCache.saveLastKnownPosition(
+            sample.latDeg, sample.lonDeg, sample.bearingDeg, sample.speedMps
+        )
+
+        // Route 4: Update speed filter
+        speedFilter.onGpsSpeed(sample.speedMps, sensorFilter.isStationary)
+
+        // Route 5: Re-seed Dead Reckoning engine origin to latest GPS fix
+        deadReckoningEngine.setOrigin(
+            sample.latDeg, sample.lonDeg, sample.bearingDeg, speedFilter.speedMps
+        )
+
+        // Route 6: Update map & UI if in GNSS mode
+        val mode = gnssQualityMonitor.currentMode
+        if (mode == NavigationMode.GNSS_LOCK || mode == NavigationMode.GNSS_DEGRADED) {
+            // Wipe out any old DR path so no yellow lines linger
+            mapController.clearReckonedPath()
             mapController.moveVehicleTo(sample.latDeg, sample.lonDeg)
-            mapController.addToRealPath(sample.latDeg, sample.lonDeg)
-            if (sample.accuracyM > 0) {
+            // Only add to real path if in actual motion
+            if (speedFilter.speedKmh > 1.5f && !sensorFilter.isStationary) {
+                mapController.addToRealPath(sample.latDeg, sample.lonDeg)
+            }
+            binding.latitudeValue.text = "%.7f".format(sample.latDeg)
+            binding.longitudeValue.text = "%.7f".format(sample.lonDeg)
+            viewModel.setDriftEstimateM(0f)
+            binding.speedValue.text = "%.1f".format(speedFilter.speedKmh)
+
+            if (sample.accuracyM > 0f && sample.accuracyM < 100f) {
                 binding.gnssLockText.text = "GNSS LOCK : 3D (±%.0fm)".format(sample.accuracyM)
             } else {
                 binding.gnssLockText.text = "GNSS LOCK : 3D"
@@ -316,124 +381,118 @@ class MainActivity : AppCompatActivity() {
             setDotColor(binding.gnssLockDot, Constants.GNSS_BADGE_COLOR)
         }
 
-        // Route 4: Update ViewModel
+        // Route 7: ViewModel & UTC time
         viewModel.publishGps(sample)
-
-        // Route 5: Update UTC time
         binding.utcTime.text = utcFormat.format(Date())
-
-        // Route 6: Update speed display (m/s → km/h) with stationary noise deadband (< 0.35 m/s)
-        val speedKmh = if (sample.speedMps < 0.35f) 0.0f else sample.speedMps * 3.6f
-        binding.speedValue.text = "%.1f".format(speedKmh)
     }
 
     // ================================================================== //
-    //  Tunnel Simulator Projection Callback (Main Thread)                 //
+    //  Autonomous Mode Transitions                                        //
     // ================================================================== //
 
     /**
-     * Called by TunnelSimulator's ~1 Hz ticker with projected (lat, lon).
-     * Runs on main thread (Handler in TunnelSimulator uses main looper).
-     *
-     * Routes projected position to:
-     * 1. MapController — move vehicle marker + add to reckoned path
-     * 2. MainViewModel — update drift estimate
-     * 3. Update lat/lon display
+     * Triggered automatically by [GnssQualityMonitor] without any manual toggle.
      */
-    private fun onTunnelProjection(lat: Double, lon: Double) {
-        // Route 1: Update map with projected position
-        mapController.moveVehicleTo(lat, lon)
-        mapController.addToReckonedPath(lat, lon)
-
-        // Route 2: Calculate and publish drift estimate
-        val fix = lastRealGpsFix
-        if (fix != null) {
-            val driftMeters = fix.distanceTo(lat, lon).toFloat()
-            viewModel.setDriftEstimateM(driftMeters)
+    private fun onNavigationModeChanged(mode: NavigationMode) {
+        runOnUiThread {
+            mapController.updateDataConnectionMode()
+            when (mode) {
+                NavigationMode.GNSS_LOCK -> {
+                    mapController.clearReckonedPath()
+                    viewModel.setMode(MainViewModel.Mode.GNSS)
+                    binding.gnssLockText.text = "GNSS LOCK : 3D"
+                    setDotColor(binding.gnssLockDot, Constants.GNSS_BADGE_COLOR)
+                    binding.autoNavStatusText.text = "GNSS 3D"
+                    binding.autoNavStatusText.setTextColor(
+                        ContextCompat.getColor(this, R.color.gnss_green)
+                    )
+                    setDotColor(binding.autoNavPulseDot, Constants.GNSS_BADGE_COLOR)
+                    binding.headerDrText.text = getString(R.string.mode_gnss)
+                    setDotColor(binding.headerDrDot, Constants.GNSS_BADGE_COLOR)
+                    Log.i(TAG, "Mode -> GNSS_LOCK (Active Satellite Tracking)")
+                }
+                NavigationMode.GNSS_DEGRADED -> {
+                    binding.gnssLockText.text = "GNSS DEGRADED : HIGH DOP"
+                    setDotColor(binding.gnssLockDot, Constants.DR_BADGE_COLOR)
+                    binding.autoNavStatusText.text = "DEGRADED"
+                    binding.autoNavStatusText.setTextColor(
+                        ContextCompat.getColor(this, R.color.dead_reckoning_amber)
+                    )
+                    setDotColor(binding.autoNavPulseDot, Constants.DR_BADGE_COLOR)
+                    Log.i(TAG, "Mode -> GNSS_DEGRADED")
+                }
+                NavigationMode.DEAD_RECKONING_AUTO -> {
+                    // Reset DR path so it starts fresh from current vehicle location
+                    mapController.clearReckonedPath()
+                    val curFix = lastRealGpsFix
+                    if (curFix != null) {
+                        deadReckoningEngine.setOrigin(
+                            curFix.latDeg, curFix.lonDeg, curFix.bearingDeg, speedFilter.speedMps
+                        )
+                    }
+                    viewModel.setMode(MainViewModel.Mode.DEAD_RECKONING)
+                    binding.gnssLockText.text = "GNSS LOST : DR ACTIVE"
+                    setDotColor(binding.gnssLockDot, Constants.DR_BADGE_COLOR)
+                    binding.autoNavStatusText.text = "DR ACTIVE"
+                    binding.autoNavStatusText.setTextColor(
+                        ContextCompat.getColor(this, R.color.dead_reckoning_amber)
+                    )
+                    setDotColor(binding.autoNavPulseDot, Constants.DR_BADGE_COLOR)
+                    binding.headerDrText.text = getString(R.string.dr_active)
+                    setDotColor(binding.headerDrDot, Constants.DR_BADGE_COLOR)
+                    Log.i(TAG, "Mode -> DEAD_RECKONING_AUTO (Autonomous Outage Fallback)")
+                }
+                NavigationMode.OFFLINE_STANDALONE -> {
+                    mapController.clearReckonedPath()
+                    viewModel.setMode(MainViewModel.Mode.DEAD_RECKONING)
+                    binding.gnssLockText.text = "OFFLINE : DR ACTIVE"
+                    val cyanColor = Color.parseColor("#00E5FF")
+                    setDotColor(binding.gnssLockDot, cyanColor)
+                    binding.autoNavStatusText.text = "OFFLINE DR"
+                    binding.autoNavStatusText.setTextColor(cyanColor)
+                    setDotColor(binding.autoNavPulseDot, cyanColor)
+                    binding.headerDrText.text = "OFFLINE DR"
+                    setDotColor(binding.headerDrDot, cyanColor)
+                    Log.i(TAG, "Mode -> OFFLINE_STANDALONE (No GPS Provider)")
+                }
+            }
         }
-
-        // Route 3: Update lat/lon display with projected coordinates
-        binding.latitudeValue.text = "%.6f".format(lat)
-        binding.longitudeValue.text = "%.6f".format(lon)
     }
 
     // ================================================================== //
     //  UI Interactions                                                     //
     // ================================================================== //
 
-    /**
-     * Wire the "Simulate Tunnel" MaterialSwitch to the TunnelSimulator.
-     */
-    private fun setupTunnelSwitch() {
-        binding.tunnelSwitch.setOnCheckedChangeListener { _, isChecked ->
-            Log.i(TAG, "Tunnel switch toggled: $isChecked")
-
-            tunnelSimulator.setActive(isChecked)
-
-            if (isChecked) {
-                // Entering Dead Reckoning mode
-                viewModel.setMode(MainViewModel.Mode.DEAD_RECKONING)
-                binding.gnssLockText.text = "GNSS LOST : DR ACTIVE"
-                setDotColor(binding.gnssLockDot, Constants.DR_BADGE_COLOR)
-                Log.i(TAG, "Mode → DEAD_RECKONING")
-            } else {
-                // Returning to GNSS mode
-                viewModel.setMode(MainViewModel.Mode.GNSS)
-                viewModel.setDriftEstimateM(0f) // Reset drift
-                binding.gnssLockText.text = "GNSS LOCK : ACQUIRING..."
-                setDotColor(binding.gnssLockDot, Color.GRAY)
-
-                // Snap map back to last real GPS position
-                val fix = lastRealGpsFix
-                if (fix != null) {
-                    mapController.moveVehicleTo(fix.latDeg, fix.lonDeg)
-                }
-                Log.i(TAG, "Mode → GNSS")
-            }
-        }
-    }
-
-    /**
-     * Wire map zoom/recenter buttons.
-     */
     private fun setupMapButtons() {
         binding.btnZoomIn.setOnClickListener { mapController.zoomIn() }
         binding.btnZoomOut.setOnClickListener { mapController.zoomOut() }
         binding.btnRecenter.setOnClickListener { mapController.recenter() }
+        binding.btnReloadMap.setOnClickListener {
+            mapController.reloadMap()
+            Toast.makeText(this, "Map reloaded", Toast.LENGTH_SHORT).show()
+        }
     }
 
-    /**
-     * Wire theme toggle button.
-     */
     private fun setupThemeToggle() {
         binding.btnThemeToggle.setOnClickListener {
             ThemeManager.toggleTheme(this)
-            // Activity will be recreated by AppCompatDelegate
         }
     }
 
-    /**
-     * Wire bottom navigation bar tabs.
-     */
     private fun setupBottomNav() {
-        // Dashboard tab — active on MainActivity
         binding.navDashboard.isSelected = true
         binding.navDashboard.setOnClickListener {
-            // Already on dashboard — no-op
             Log.d(TAG, "Dashboard tab clicked (already here)")
         }
 
-        // Logs tab → DriveLogActivity
         binding.navLogs.setOnClickListener {
-            Log.d(TAG, "Logs tab clicked → navigating to DriveLogActivity")
             startActivity(Intent(this, DriveLogActivity::class.java))
         }
 
-        // About tab → ISRO SIH project dialog
         binding.navAbout.setOnClickListener {
             com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.app_name_full)
-                .setMessage("ISRO SIH PS 26168 Prototype\nVersion 1.0-prototype\n\nIntelligent Dead Reckoning (DR) with high-frequency IMU logging and constant-velocity fallback for GNSS-denied environments.")
+                .setMessage("ISRO SIH PS 26168 Prototype\nVersion 1.0-prototype\n\nIntelligent Autonomous Dead Reckoning (DR) with high-frequency IMU logging, online bias calibration, and smooth no-circle fallback for GNSS-denied environments.")
                 .setPositiveButton(android.R.string.ok, null)
                 .show()
         }
@@ -443,12 +502,7 @@ class MainActivity : AppCompatActivity() {
     //  LiveData Observers → UI Updates                                    //
     // ================================================================== //
 
-    /**
-     * Observe all [MainViewModel] LiveData fields and update the corresponding
-     * UI elements when values change.
-     */
     private fun observeViewModel() {
-        // ---- Mode (GNSS / DEAD_RECKONING) ----
         viewModel.currentMode.observe(this) { mode ->
             when (mode) {
                 MainViewModel.Mode.GNSS -> {
@@ -457,8 +511,6 @@ class MainActivity : AppCompatActivity() {
                         ContextCompat.getColor(this, R.color.gnss_green)
                     )
                     setDotColor(binding.modeDot, Constants.GNSS_BADGE_COLOR)
-                    setDotColor(binding.headerDrDot, Constants.GNSS_BADGE_COLOR)
-                    binding.headerDrText.text = getString(R.string.mode_gnss)
                 }
                 MainViewModel.Mode.DEAD_RECKONING -> {
                     binding.modeText.text = getString(R.string.mode_dead_reckoning)
@@ -466,14 +518,11 @@ class MainActivity : AppCompatActivity() {
                         ContextCompat.getColor(this, R.color.dead_reckoning_amber)
                     )
                     setDotColor(binding.modeDot, Constants.DR_BADGE_COLOR)
-                    setDotColor(binding.headerDrDot, Constants.DR_BADGE_COLOR)
-                    binding.headerDrText.text = getString(R.string.dr_active)
                 }
                 null -> { /* no-op */ }
             }
         }
 
-        // ---- IMU Sample (accel + gyro values) ----
         viewModel.latestSample.observe(this) { sample ->
             if (sample != null) {
                 binding.accelX.text = "%.2f".format(sample.ax)
@@ -485,35 +534,21 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // ---- GPS Sample (lat, lon, speed) ----
-        viewModel.latestGps.observe(this) { gps ->
-            if (gps != null && !tunnelSimulator.isActive) {
-                binding.latitudeValue.text = "%.6f".format(gps.latDeg)
-                binding.longitudeValue.text = "%.6f".format(gps.lonDeg)
-
-                val speedKmh = if (gps.speedMps < 0.35f) 0.0f else gps.speedMps * 3.6f
-                binding.speedValue.text = "%.1f".format(speedKmh)
-            }
-        }
-
-        // ---- Drift Estimate ----
         viewModel.driftEstimateM.observe(this) { driftM ->
             binding.driftValue.text = "%.1f m".format(driftM)
 
-            // Color-code the drift indicator dot
             val driftColor = when {
-                driftM < 10f -> Constants.GNSS_BADGE_COLOR   // Green: low drift
-                driftM < 50f -> Constants.DR_BADGE_COLOR     // Amber: moderate drift
-                else -> Color.RED                             // Red: high drift
+                driftM < 10f -> Constants.GNSS_BADGE_COLOR   // Green: minimal uncertainty
+                driftM < 25f -> Constants.DR_BADGE_COLOR     // Amber: moderate uncertainty
+                else -> Color.RED                             // Red: elevated uncertainty
             }
             setDotColor(binding.driftDot, driftColor)
         }
 
-        // ---- CSV Logging Status ----
         viewModel.csvLoggingActive.observe(this) { active ->
             if (active) {
                 binding.csvLogText.text = getString(R.string.csv_log_active)
-                setDotColor(binding.csvLogDot, Constants.GNSS_BADGE_COLOR) // Green = active
+                setDotColor(binding.csvLogDot, Constants.GNSS_BADGE_COLOR)
             } else {
                 binding.csvLogText.text = getString(R.string.csv_log_inactive)
                 setDotColor(binding.csvLogDot, Color.GRAY)
@@ -525,16 +560,11 @@ class MainActivity : AppCompatActivity() {
     //  Utility                                                            //
     // ================================================================== //
 
-    /**
-     * Set the background color of a small dot [View] that uses a shape drawable.
-     * Works with both [GradientDrawable] (from XML shapes like dot_gnss.xml)
-     * and falls back to setting the background tint directly.
-     */
     private fun setDotColor(dotView: View, color: Int) {
         val bg = dotView.background
         if (bg is GradientDrawable) {
             bg.mutate()
-            (bg as GradientDrawable).setColor(color)
+            bg.setColor(color)
         } else {
             dotView.setBackgroundColor(color)
         }

@@ -60,17 +60,6 @@
                 android:fontFamily="monospace"
                 android:letterSpacing="0.05" />
         </LinearLayout>
-
-        <!-- Theme Toggle -->
-        <ImageButton
-            android:id="@+id/btn_theme_toggle"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_day"
-            android:contentDescription="@string/cd_theme_toggle"
-            app:tint="?attr/colorOnSurface" />
     </LinearLayout>
 
     <!-- ===== Scrollable Content ===== -->
@@ -137,7 +126,7 @@
                         android:textAllCaps="true" />
                 </LinearLayout>
 
-                <!-- Zoom Controls (top-right overlay) -->
+                <!-- Map Controls (top-right overlay: Theme Toggle above Navigation Zoom & Recenter) -->
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -145,10 +134,32 @@
                     android:layout_margin="8dp"
                     android:orientation="vertical">
 
+                    <!-- Theme Toggle directly above Map Controls -->
+                    <ImageButton
+                        android:id="@+id/btn_theme_toggle"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_chip"
+                        android:src="@android:drawable/ic_menu_day"
+                        android:contentDescription="@string/cd_theme_toggle"
+                        app:tint="?attr/colorOnSurface" />
+
+                    <!-- Reload / Refresh Map Button -->
+                    <ImageButton
+                        android:id="@+id/btn_reload_map"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_marginTop="4dp"
+                        android:background="@drawable/bg_chip"
+                        android:src="@android:drawable/ic_popup_sync"
+                        android:contentDescription="@string/cd_reload_map"
+                        app:tint="?attr/colorOnSurface" />
+
                     <ImageButton
                         android:id="@+id/btn_zoom_in"
                         android:layout_width="36dp"
                         android:layout_height="36dp"
+                        android:layout_marginTop="6dp"
                         android:background="@drawable/bg_chip"
                         android:src="@android:drawable/ic_menu_add"
                         android:contentDescription="@string/cd_zoom_in"
@@ -168,7 +179,7 @@
                         android:id="@+id/btn_recenter"
                         android:layout_width="36dp"
                         android:layout_height="36dp"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="6dp"
                         android:background="@drawable/bg_chip"
                         android:src="@android:drawable/ic_menu_mylocation"
                         android:contentDescription="@string/cd_recenter"
@@ -748,7 +759,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- ===== Simulate Tunnel Toggle ===== -->
+            <!-- ===== Autonomous Navigation Health Card ===== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -758,11 +769,11 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <!-- Icon placeholder -->
                 <View
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:background="@drawable/bg_sensor_cell" />
+                    android:id="@+id/auto_nav_pulse_dot"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:background="@drawable/dot_gnss" />
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -772,30 +783,36 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/auto_nav_title"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/simulate_tunnel"
+                        android:text="AUTONOMOUS DR SYSTEM"
                         android:textColor="?attr/colorOnSurface"
                         android:textSize="11sp"
                         android:fontFamily="monospace"
                         android:textStyle="bold"
-                        android:textAllCaps="true"
                         android:letterSpacing="0.05" />
 
                     <TextView
+                        android:id="@+id/auto_nav_desc"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="@string/simulate_tunnel_description"
+                        android:text="Automatic outage detection &amp; zero-bias IMU fallback"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="10sp"
                         android:fontFamily="monospace" />
                 </LinearLayout>
 
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/tunnel_switch"
+                <TextView
+                    android:id="@+id/auto_nav_status_text"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    android:text="ONLINE"
+                    android:textColor="?attr/colorSecondary"
+                    android:textSize="10sp"
+                    android:fontFamily="monospace"
+                    android:textStyle="bold" />
             </LinearLayout>
 
         </LinearLayout>

@@ -142,4 +142,5 @@
     <string name="cd_sensor_icon">Sensor Icon</string>
     <string name="cd_filter">Filter Sessions</string>
     <string name="cd_export_csv">Export CSV</string>
+    <string name="cd_reload_map">Reload Map</string>
 </resources>
